@@ -48,6 +48,7 @@ if platform.system() == "Windows":
 elif platform.system() == "Darwin":
     extra_compile_args.extend([
         '-std=c++11', 
+        '-I/opt/homebrew/include',
         "-mmacosx-version-min=10.9"
     ])
     extra_link_args.extend([
