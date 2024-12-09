@@ -3870,7 +3870,7 @@ Filter* parse_filter(int filter_index){
     }
 }
 
-Matrix translateInputMatrix(std::vector<std::vector<int>>& matrix, std::vector<std::vector<int>>& column_grades){
+Matrix translateInputMatrix(std::vector<std::vector<int>>const& matrix, std::vector<std::vector<int>>const& column_grades){
     Matrix M;
     for(size_t i=0; i<matrix.size(); i++){
         grade_t grade;
@@ -3923,7 +3923,7 @@ GradedMatrix compute_kernel(std::vector<std::vector<int>>& matrix, std::vector<s
     return Ker;
 }
 
-std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int>>& matrix, std::vector<std::vector<int>>& row_grades, std::vector<std::vector<int>>& column_grades){
+std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int>>const& matrix, std::vector<std::vector<int>>const& row_grades, std::vector<std::vector<int>>const& column_grades){
     Matrix M = translateInputMatrix(matrix, column_grades);
     std::pair<Matrix, Matrix> gbs = computeGroebnerBases_gradeopt_min(M);
     GradedMatrix Im = translateOutputMatrix(gbs.first);
@@ -3933,7 +3933,7 @@ std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int
     return std::pair<GradedMatrix, GradedMatrix>(Im, Ker);
 }
 
-GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std::vector<std::vector<int>>& column_grades_h, std::vector<std::vector<int>>& low_matrix, std::vector<std::vector<int>>& column_grades_l){
+GradedMatrix presentation_FIrep(std::vector<std::vector<int>>const& high_matrix, std::vector<std::vector<int>>const& column_grades_h, std::vector<std::vector<int>>const& low_matrix, std::vector<std::vector<int>>const& column_grades_l){
     Matrix M_h = translateInputMatrix(high_matrix, column_grades_h);
     Matrix M_l = translateInputMatrix(low_matrix, column_grades_l);
     auto start = std::chrono::high_resolution_clock::now();
@@ -3959,7 +3959,7 @@ GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std:
     return graded_matrix;
 }
 
-GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
+GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>const& distance_matrices, std::vector<input_t>const& max_metric_values, std::vector<std::vector<input_t>>const& filters, int hom_dim){
     std::pair<Matrix, Matrix> boundary_matrices = compute_boundary_matrices_dm(distance_matrices, max_metric_values, filters, hom_dim);
     verify_kernel(boundary_matrices.first, boundary_matrices.second);
     for(size_t i=0; i<boundary_matrices.second.size(); i++){
@@ -3988,7 +3988,7 @@ GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>& dis
     return graded_matrix;
 }
 
-GradedMatrix presentation(std::vector<std::vector<input_t>>& _points, std::vector<int>& _metrics, std::vector<input_t>& _max_metric_values, std::vector<int>& _filters, int hom_dim){
+GradedMatrix presentation(std::vector<std::vector<input_t>>const& _points, std::vector<int>const& _metrics, std::vector<input_t>const& _max_metric_values, std::vector<int>const& _filters, int hom_dim){
     std::vector<Metric*> metrics;
     for(size_t i=0; i<_metrics.size(); i++){
         metrics.push_back(parse_metric(_metrics[i]));
@@ -4042,7 +4042,7 @@ std::vector<int> translate_grade(grade_t _grade) {
     return grade;
 }
 
-PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim){
+PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>const& trajectories, input_t const& max_metric_value, int hom_dim){
     Metric* m = new SquaredEuclideanMetric();
     std::pair<Matrix, Matrix> boundary_matrices_out = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
     

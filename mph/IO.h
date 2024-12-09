@@ -132,7 +132,7 @@ struct VectorHasher
     }
 };
 
-void build_VR_subcomplex(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
+void build_VR_subcomplex(std::vector<std::vector<input_t>>const& points, std::vector<Metric*>const& metrics, std::vector<Filter*>const& filters, std::vector<size_t>& vertices, std::vector<input_t>const& prev_values, std::vector<input_t>const& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex.
      
      points {std::vector<std::vector<input_t>>} -- a list of points in space.
@@ -284,7 +284,7 @@ void build_VR_subcomplex_grades(std::vector<std::vector<input_t>>& points, std::
     }
 }
 
-void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
+void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>const& distance_matrices, std::vector<std::vector<input_t>>const& filters, std::vector<size_t>& vertices, std::vector<input_t>const& prev_values, std::vector<input_t>const& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex.
      
      distance_matrices {std::vector<std::vector<std::vector<input_t>>>} -- a list of distance matrices.
@@ -548,7 +548,7 @@ template <typename T> std::vector<hash_map<T, index_t>> compute_grade_map(std::v
 }
 
 
-std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>const& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
      
      points {std::vector<std::vector<S>>} -- a list of points in space.
@@ -606,7 +606,7 @@ std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vecto
     return values;
 }
 
-std::vector<std::vector<std::vector<input_t>>> get_trajectory_dms(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric){
+std::vector<std::vector<std::vector<input_t>>> get_trajectory_dms(std::vector<std::vector<std::vector<input_t>>>const& trajectories, Metric* metric){
     /* Computing the distance matrix at each time-step of the trajectories */
     std::vector<std::vector<std::vector<input_t>>> distance_matrices;
     for (size_t j = 0; j < trajectories[0].size(); j++) {
@@ -729,7 +729,7 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
     return new_simplices;
 }
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric, input_t max_metric_value, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>const& trajectories, Metric* metric, input_t max_metric_value, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
      
      points {std::vector<std::vector<S>>} -- a list of points in space.
@@ -822,7 +822,7 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
     return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
 }
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<std::vector<input_t>>>const& distance_matrices, std::vector<input_t>const& max_metric_values, std::vector<std::vector<input_t>>const& filters, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
      
      distance_matrices {std::vector<std::vector<std::vector<input_t>>>} -- a list of distance matrices.
