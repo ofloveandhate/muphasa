@@ -3847,6 +3847,7 @@ struct PythonLandscape{
 
 struct PythonCompressedLandscape{
     std::vector<std::pair<std::vector<int>, std::vector<std::vector<int>>>> pairings;
+    std::vector<std::vector<input_t>> index_value_lists;
 };
 
 Metric* parse_metric(int metric_index){
@@ -4044,10 +4045,12 @@ std::vector<int> translate_grade(grade_t _grade) {
 
 PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim){
     Metric* m = new SquaredEuclideanMetric();
-    std::pair<Matrix, Matrix> boundary_matrices_out = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
+    Matrix high_matrix; Matrix low_matrix;
+    std::vector<std::vector<input_t>> index_value_lists;
+    std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
     
     std::pair<Matrix, hash_map<size_t, grade_t>> presentation;
-    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(boundary_matrices_out.first, boundary_matrices_out.second);
+    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
     
     CompressedLandscape compressed_landscape = computeCompressedLandscape(minimal_presentation.first, minimal_presentation.second);
     
@@ -4061,23 +4064,26 @@ PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std:
         }
         python_compressed_landscape.pairings.push_back(std::pair<std::vector<int>, std::vector<std::vector<int>>>(g, f));
     }
+    python_compressed_landscape.index_value_lists = index_value_lists;
     return python_compressed_landscape;
 }
 
 PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim, int landscape_dim){
     Metric* m = new SquaredEuclideanMetric();
-    std::pair<Matrix, Matrix> boundary_matrices_out = compute_boundary_matrices_spatiotemporal(trajectories, m, 1000, 1);
+    Matrix high_matrix; Matrix low_matrix;
+    std::vector<std::vector<input_t>> index_value_lists;
+    std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
     
-    grade_t v_max = boundary_matrices_out.second[0].grade;
-    for ( auto& column : boundary_matrices_out.second ) {
+    grade_t v_max = low_matrix[0].grade;
+    for ( auto& column : low_matrix ) {
         v_max = column.grade.join(v_max);
     }
-    for ( auto& column : boundary_matrices_out.first ) {
+    for ( auto& column : high_matrix ) {
         v_max = column.grade.join(v_max);
     }
     
     std::pair<Matrix, hash_map<size_t, grade_t>> presentation;
-    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(boundary_matrices_out.first, boundary_matrices_out.second);
+    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
     
     Landscape landscape = computeLandscapeNaive(minimal_presentation.first, minimal_presentation.second, v_max, landscape_dim);
     

@@ -192,18 +192,19 @@ void build_VR_subcomplex(std::vector<std::vector<input_t>>& points, std::vector<
 void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, Metric* metric, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, input_t& max_metric_value, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex for a dynamic metric space in the sense of Memoli/Kim (2020).
      
-     points {std::vector<std::vector<input_t>>} -- a list of points in space.
-     metrics {std::vector<Metric>} -- a list of metrics on the points that should be used to contruct the complex.
-     filters {std::vector<Filter>} -- a list of filter functions on the points that should be used to contruct the complex.
-     vertices {std::vector<size_t>} -- a list of the current vertices in the simplex being contructed.
-     prev_values {std::vector<input_t>} -- the grade of the current simplex being contructed.
-     max_metric_values {std::vector<input_t>} -- the maximum allowed distances for each metric respectively.
+     trajectory_dms {std::vector<std::vector<std::vector<input_t>>>} -- a list of trajectories for each point
+     metric {Metric} -- a metric on the points that should be used to contruct the complex
+     vertices {std::vector<size_t>} -- a list of the current vertices in the simplex being contructed
+     prev_values {std::vector<input_t>} -- the grade of the current simplex being contructed. KATE: not sure what this is used for
+     max_metric_value {std::vector<input_t>} -- the maximum allowed distance for the metric
      low_simplices {std::vector<Simplex>} -- all simplices of dimension hom_dim-1.
      mid_simplices {std::vector<Simplex>} -- all simplices of dimension hom_dim.
      high_simplices {std::vector<Simplex>} -- all simplices of dimension hom_dim+1.
      hom_dim {int} -- the dimension of the homology to be computed.
      
      */
+    
+    // Add the current simplex to the relevant list and, if it's big enough, return
     if (vertices.size() == hom_dim) //simplex of dimension hom_dim - 1
     {
         low_simplices.push_back(Simplex<input_t>(vertices, prev_values));
@@ -216,15 +217,15 @@ void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<inpu
         return;
     }
     
-    for (size_t j = vertices.back() + 1; j < trajectory_dms[0].size(); j++) {
+    for (size_t new_vertex = vertices.back() + 1; new_vertex < trajectory_dms[0].size(); new_vertex++) {
         std::vector<input_t> curr_values(prev_values);
         bool should_add = true;
         
         for(size_t time_index = 0; time_index<trajectory_dms.size(); time_index++){
             should_add = true;
-            for (size_t k = 0; k < vertices.size(); k++) {
-                size_t p = vertices[k];
-                input_t d = trajectory_dms[time_index][j][p];
+            for (size_t old_vertex_index = 0; old_vertex_index < vertices.size(); old_vertex_index++) {
+                size_t old_vertex = vertices[old_vertex_index];
+                input_t d = trajectory_dms[time_index][new_vertex][old_vertex];
                 if(d < max_metric_value){
                     curr_values[0] = d < curr_values[0] ? curr_values[0] : d;
                 }else{
@@ -238,7 +239,7 @@ void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<inpu
         }
         
         if(should_add){
-            vertices.push_back(j);
+            vertices.push_back(new_vertex);
             build_VR_subcomplex_spatiotemporal(trajectory_dms, metric, vertices, curr_values, max_metric_value, low_simplices, mid_simplices, high_simplices, hom_dim);
             vertices.pop_back();
         }
@@ -363,29 +364,35 @@ template <typename T> void add_boundary_columns(std::vector<Simplex<T>>& high_si
     /* Helper function to construct and add the columns of the boundary matrix from lists of simplices. */
     
     std::unordered_map<VertexContainer, size_t, VectorHasher> map;
-    for(size_t index=0; index<low_simplices.size(); index++){
-        map[VertexContainer(low_simplices[index].vertices)] = index;
+    for(size_t simplex_index=0; simplex_index<low_simplices.size(); simplex_index++){
+        map[VertexContainer(low_simplices[simplex_index].vertices)] = simplex_index;
     }
     
-    for(size_t index=0; index < high_simplices.size(); index++){
-        grade_t grade(transform_grade<T>(high_simplices[index].grade, grade_map));
-        SignatureColumn column(grade, index);
-        sort(high_simplices[index].vertices.begin(), high_simplices[index].vertices.end());
+    for(size_t simplex_index=0; simplex_index < high_simplices.size(); simplex_index++){
+        grade_t grade(transform_grade<T>(high_simplices[simplex_index].grade, grade_map));
+        SignatureColumn column(grade, simplex_index);
+        sort(high_simplices[simplex_index].vertices.begin(), high_simplices[simplex_index].vertices.end());
         int coeff = 1;
-        for(size_t simplex_index = 0; simplex_index < high_simplices[index].vertices.size() ; simplex_index++){
-            VertexContainer vertices;
-            std::vector<size_t> high_vertices;
-            for(size_t k=0; k < high_simplices[index].vertices.size(); k++){
-                if(k!=simplex_index){
-                    vertices.push_back(high_simplices[index].vertices[k]);
-                    high_vertices.push_back(high_simplices[index].vertices[k]);
+
+        // pick a vertex in the simplex, one at a time.  
+        // for each not-that-vertex, we compute the corresponding simplices
+        // they're summed up
+        for(size_t vertex_index = 0; vertex_index < high_simplices[simplex_index].vertices.size() ; vertex_index++){
+
+            VertexContainer vertices; // building this.  this is a summand.
+            std::vector<size_t> high_vertices; 
+
+            for(size_t k=0; k < high_simplices[simplex_index].vertices.size(); k++){
+                if(k!=vertex_index){
+                    vertices.push_back(high_simplices[simplex_index].vertices[k]);
+                    high_vertices.push_back(high_simplices[simplex_index].vertices[k]);
                 }
             }
             std::vector<size_t> low_vertices = low_simplices[map[vertices]].vertices;
             sort(high_vertices.begin(), high_vertices.end());
             sort(low_vertices.begin(), low_vertices.end());
             if( low_vertices != high_vertices){
-                std::cout << "Finished computing boundary matrices." << std::endl;
+                std::cout << "Finished computing boundary matrices. add_boundary_columns" << std::endl;
             }
             column.push(column_entry_t(coeff, map[vertices]));
             //coeff *= -1; //TODO: handle more types of coefficients than F_2.
@@ -397,40 +404,47 @@ template <typename T> void add_boundary_columns(std::vector<Simplex<T>>& high_si
 template <typename T> void add_boundary_columns_multicritical(std::vector<Simplex<T>>& high_simplices, std::vector<Simplex<T>>& low_simplices, Matrix& matrix, std::vector<hash_map<T, index_t>>& grade_map){
     /* Helper function to construct and add the columns of the boundary matrix from lists of simplices.
      
-     Assumption: low_simplices is ordered lexicographically w.r.t each signature index
+     Assumption: low_simplices is ordered reverse lexicographically w.r.t each signature index
      
      */
     
-    std::unordered_map<VertexContainer, size_t, VectorHasher> map;
-    for(size_t index=0; index<low_simplices.size(); index++){ // Observe that since low_simplices is ordered lex w.r.t each signature index, the representative with lowest lex order will be present in the map.
-        map[VertexContainer(low_simplices[index].vertices)] = index;
+    // Maps a collection of vertices to the lex-minimal simplex that has those vertices
+    std::unordered_map<VertexContainer, size_t, VectorHasher> map; // we gotta rename this mfer
+    for(size_t simplex_index=0; simplex_index<low_simplices.size(); simplex_index++){
+        map[VertexContainer(low_simplices[simplex_index].vertices)] = simplex_index;
     }
     
     // Map d
-    for(size_t index=0; index < high_simplices.size(); index++){
-        grade_t grade(transform_grade<T>(high_simplices[index].grade, grade_map));
-        SignatureColumn column(grade, index);
-        int coeff = 1;
-        for(size_t simplex_index = 0; simplex_index < high_simplices[index].vertices.size() ; simplex_index++){
+    // For each high simplex
+    for(size_t simplex_index=0; simplex_index < high_simplices.size(); simplex_index++){
+
+        // because the grades are stored by indices, we need to get the actual grade value for it.
+        grade_t grade(transform_grade<T>(high_simplices[simplex_index].grade, grade_map));
+
+        SignatureColumn column(grade, simplex_index); // create object to store.
+        int coeff = 1; // §kate says this will be 1 forever and we can ignore it, because we're working over F2
+
+        for(size_t vertex_index = 0; vertex_index < high_simplices[simplex_index].vertices.size() ; vertex_index++){
             VertexContainer vertices;
             std::vector<size_t> high_vertices;
-            for(size_t k=0; k < high_simplices[index].vertices.size(); k++){
-                if(k!=simplex_index){
-                    vertices.push_back(high_simplices[index].vertices[k]);
-                    high_vertices.push_back(high_simplices[index].vertices[k]);
+            for(size_t k=0; k < high_simplices[simplex_index].vertices.size(); k++){
+                if(k!=vertex_index){
+                    vertices.push_back(high_simplices[simplex_index].vertices[k]);
+                    high_vertices.push_back(high_simplices[simplex_index].vertices[k]);
                 }
             }
+
             std::vector<size_t> low_vertices = low_simplices[map[vertices]].vertices;
             sort(high_vertices.begin(), high_vertices.end());
             sort(low_vertices.begin(), low_vertices.end());
-            if( low_vertices != high_vertices){
-                std::cout << "Finished computing boundary matrices." << std::endl;
-            }
+            // if( low_vertices != high_vertices){
+                // std::cout << "Finished computing boundary matrices. add_boundary_columns_multicritical" << std::endl;
+            // }
             size_t diff = 0;
             while ( true ) {
                 bool should_add = true;
                 for (size_t k=0; k<low_simplices[map[vertices]-diff].grade.size(); k++) {
-                    if ( low_simplices[map[vertices]-diff].grade[k]> high_simplices[index].grade[k]) {
+                    if ( low_simplices[map[vertices]-diff].grade[k]> high_simplices[simplex_index].grade[k]) {
                         should_add = false;
                         break;
                     }
@@ -454,8 +468,8 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
     
     // Map pi
     std::vector<std::vector<Simplex<T>>> group_by_signature;
-    for (size_t index=0; index < low_simplices.size(); index++) {
-        size_t signature = low_simplices[index].signature;
+    for (size_t simplex_index=0; simplex_index < low_simplices.size(); simplex_index++) {
+        size_t signature = low_simplices[simplex_index].signature;
         while (group_by_signature.size() <= signature) {
             group_by_signature.push_back(std::vector<Simplex<T>>());
         }
@@ -463,7 +477,7 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
         for (size_t i=0; i < group_by_signature[signature].size(); i++) {
             bool is_lower = true;
             for (size_t j=0; j < group_by_signature[signature][i].grade.size(); j++) {
-                if ( group_by_signature[signature][i].grade[j] > low_simplices[index].grade[j] ) {
+                if ( group_by_signature[signature][i].grade[j] > low_simplices[simplex_index].grade[j] ) {
                     is_lower = false;
                     break;
                 }
@@ -474,8 +488,8 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
             }
         }
         if (should_add) {
-            low_simplices[index].signature = index;
-            group_by_signature[signature].push_back(low_simplices[index]);
+            low_simplices[simplex_index].signature = simplex_index;
+            group_by_signature[signature].push_back(low_simplices[simplex_index]);
         }
     }
     
@@ -499,52 +513,79 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
     
 }
 
-
-template <typename T> std::vector<hash_map<T, index_t>> compute_grade_map(std::vector<Simplex<T>>& high_simplices, std::vector<Simplex<T>>& mid_simplices, std::vector<Simplex<T>>& low_simplices){
+// T is a scalar type, a distance-like number
+template <typename T> std::pair<std::vector<hash_map<T, index_t>>,std::vector<std::vector<T>>> compute_grade_map(std::vector<Simplex<T>>& high_simplices, std::vector<Simplex<T>>& mid_simplices, std::vector<Simplex<T>>& low_simplices){
     /* Computes the map needed to transform a 'input_t' type grading of the simplices to the 'grade_t' type used for computations. */
 
-    std::vector<std::set<T>> index_values;
+    // for every parameter, we have a set of 
+    std::vector<std::set<T>> simplex_index_values; // chose the set for its uniquenmess property
     size_t grade_size = 0;
+
+    // this seems suspicious.  doens't every simplex have a value for every parameter?  --kate
     if(low_simplices.size()>0){
         grade_size = low_simplices[0].grade.size();
     }
     if(mid_simplices.size() > 0 && mid_simplices[0].grade.size()>grade_size){
         grade_size = mid_simplices[0].grade.size();
     }
+    // conspicuously absent, what about the high simplices?
+
+    // initialise the vector with length number of grades
     for(size_t i=0; i<grade_size; i++){
-        index_values.push_back(std::set<T>());
+        simplex_index_values.push_back(std::set<T>());
+    }
+    // the dimension above
+
+    // for each high simplex
+    for (size_t simplex_index_column = 0; simplex_index_column < high_simplices.size(); simplex_index_column++){
+
+        // for each grade for the current simplex
+        for(size_t simplex_index_grade=0; simplex_index_grade< high_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
+
+            // a grade is composed of one value for each parameter
+            simplex_index_values[simplex_index_grade].insert(high_simplices[simplex_index_column].grade[simplex_index_grade]);
+        }
+    }
+
+    // the current dimension
+    for (size_t simplex_index_column = 0; simplex_index_column < mid_simplices.size(); simplex_index_column++){
+        for(size_t simplex_index_grade=0; simplex_index_grade< mid_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
+            simplex_index_values[simplex_index_grade].insert(mid_simplices[simplex_index_column].grade[simplex_index_grade]);
+        }
+    }
+
+    // the dimension one lower
+    for (size_t simplex_index_column = 0; simplex_index_column < low_simplices.size(); simplex_index_column++){
+        for(size_t simplex_index_grade=0; simplex_index_grade< low_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
+            simplex_index_values[simplex_index_grade].insert(low_simplices[simplex_index_column].grade[simplex_index_grade]);
+        }
     }
     
-    for (size_t index_column = 0; index_column < high_simplices.size(); index_column++){
-        for(size_t index_grade=0; index_grade< high_simplices[index_column].grade.size(); index_grade++){
-            index_values[index_grade].insert(high_simplices[index_column].grade[index_grade]);
-        }
-    }
-    for (size_t index_column = 0; index_column < mid_simplices.size(); index_column++){
-        for(size_t index_grade=0; index_grade< mid_simplices[index_column].grade.size(); index_grade++){
-            index_values[index_grade].insert(mid_simplices[index_column].grade[index_grade]);
-        }
-    }
-    for (size_t index_column = 0; index_column < low_simplices.size(); index_column++){
-        for(size_t index_grade=0; index_grade< low_simplices[index_column].grade.size(); index_grade++){
-            index_values[index_grade].insert(low_simplices[index_column].grade[index_grade]);
-        }
-    }
-    
-    std::vector<std::vector<T>> index_value_lists;
-    for(size_t i=0; i<index_values.size(); i++){
-        index_value_lists.push_back(std::vector<T>(index_values[i].begin(), index_values[i].end()));
-        sort(index_value_lists[i].begin(), index_value_lists[i].end());
+    // convert sets to lists and sort them
+    std::vector<std::vector<T>> simplex_index_value_lists;
+    for(size_t i=0; i<simplex_index_values.size(); i++){
+        simplex_index_value_lists.push_back(std::vector<T>(simplex_index_values[i].begin(), simplex_index_values[i].end()));
+        sort(simplex_index_value_lists[i].begin(), simplex_index_value_lists[i].end());
     }
     
     std::vector<hash_map<T, index_t>> grade_map;
-    for(size_t i=0; i<index_value_lists.size(); i++){
-        grade_map.push_back(hash_map<T, index_t>());
-        for(size_t j=0; j<index_value_lists[i].size(); j++){
-            grade_map[i][index_value_lists[i][j]] = j;
+
+    // construct a reverse lookup table, so given a crit value can get the simplex_index of it.
+    for(size_t param_ind=0; param_ind<simplex_index_value_lists.size(); param_ind++){
+        grade_map.push_back(hash_map<T, index_t>()); // empty hash map
+
+
+        // for each critical value, put in 
+        for(size_t crit_val_ind=0; crit_val_ind<simplex_index_value_lists[param_ind].size(); crit_val_ind++){
+            // given a crit vaue, can ell which criticial value it is.  so can take in a critical vbalue and tell you its simplex_index
+            grade_map[param_ind] [simplex_index_value_lists[param_ind][crit_val_ind]] = crit_val_ind;
+            //         ^^ an integer simplex_indexing the paramters
+            //                      ^^ keys in the hashmap are critical values
+            //                                                                   ^^ values are indices
         }
     }
-    return grade_map;
+    return std::pair<std::vector<hash_map<T, index_t>>, std::vector<std::vector<T>>>(grade_map, simplex_index_value_lists);
+    // in python, would be return [grade_map, simplex_index_value_lists]
 }
 
 
@@ -572,18 +613,18 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
             vertices.push_back(i);
             
             std::vector<input_t> curr_values;
-            for(size_t metric_index=0; metric_index < metrics.size(); metric_index++){
+            for(size_t metric_simplex_index=0; metric_simplex_index < metrics.size(); metric_simplex_index++){
                 curr_values.push_back(0);
             }
-            for(size_t filter_index=0; filter_index < filters.size(); filter_index++){
-                curr_values.push_back((*filters[filter_index]).eval(points[i]));
+            for(size_t filter_simplex_index=0; filter_simplex_index < filters.size(); filter_simplex_index++){
+                curr_values.push_back((*filters[filter_simplex_index]).eval(points[i]));
             }
             
             std::vector<std::vector<input_t>> points_bak = points;
             
             build_VR_subcomplex(points, metrics, filters, vertices, curr_values, max_metric_values, low_simplices, mid_simplices, high_simplices, hom_dim);
         }
-        std::vector<hash_map<input_t, index_t>> grade_map = compute_grade_map<input_t>(high_simplices, mid_simplices, low_simplices);
+        std::vector<hash_map<input_t, index_t>> grade_map = compute_grade_map<input_t>(high_simplices, mid_simplices, low_simplices).first;
         add_boundary_columns<input_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<input_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
@@ -591,15 +632,14 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
     return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
 }
 
-std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vector<input_t>>& trajectory, Metric* metric) {
+std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vector<input_t>>& point_cloud, Metric* metric) {
     /* Compressed distance matrix */
     std::vector<std::vector<input_t>> values;
-    for (size_t i = 0; i < trajectory.size(); i++) {
+    for (size_t i = 0; i < point_cloud.size(); i++) {
         std::vector<input_t> row;
         for (size_t j = 0; j <= i ; j++) {
-            input_t val = ((int)(1000*(*metric).eval(trajectory[i], trajectory[j])));
+            input_t val = ((int)(1*(*metric).eval(point_cloud[i], point_cloud[j])));
             row.push_back(val);
-         //   std::cout << "Eval: (" << trajectory[i][0] << ", "<< trajectory[i][1] << ", "<< trajectory[i][2] << ")" << "and (" << trajectory[j][0] << ", "<< trajectory[j][1] << ", "<< trajectory[j][2] << ")" << " = " << val << std::endl;
         }
         values.push_back(row);
     }
@@ -609,27 +649,28 @@ std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vecto
 std::vector<std::vector<std::vector<input_t>>> get_trajectory_dms(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric){
     /* Computing the distance matrix at each time-step of the trajectories */
     std::vector<std::vector<std::vector<input_t>>> distance_matrices;
-    for (size_t j = 0; j < trajectories[0].size(); j++) {
-        std::vector<std::vector<input_t>> trajectory;
-        for (size_t i = 0; i < trajectories.size(); i++) {
-            trajectory.push_back(trajectories[i][j]);
+
+    for (size_t timestep = 0; timestep < trajectories[0].size(); timestep++) {
+        std::vector<std::vector<input_t>> point_cloud;
+        for (size_t point = 0; point < trajectories.size(); point++) {
+            point_cloud.push_back(trajectories[point][timestep]);
         }
-        distance_matrices.push_back(compute_distance_matrix(trajectory, metric));
+        distance_matrices.push_back(compute_distance_matrix(point_cloud, metric));
     }
     return distance_matrices;
 }
 
 std::vector<Simplex<input_t>> calculate_birth_grades2(std::vector<std::vector<std::vector<input_t>>> trajectory_dms, input_t& max_metric_value, std::vector<Simplex<input_t>>& simplices) {
     std::vector<Simplex<input_t>> new_simplices;
-    for(size_t index=0; index<simplices.size(); index++){
+    for(size_t simplex_index=0; simplex_index<simplices.size(); simplex_index++){
         input_t prev_value = 0;
-        for (size_t i=1; i< simplices[index].vertices.size(); i++) {
+        for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
             for (size_t j=0; j<i ; j++) {
                 prev_value = trajectory_dms[0][i][j] < prev_value ? prev_value : trajectory_dms[0][i][j];
             }
         }
         input_t curr_value = 0;
-        for (size_t i=1; i< simplices[index].vertices.size(); i++) {
+        for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
             for (size_t j=0; j<i ; j++) {
                 curr_value = trajectory_dms[1][i][j] < curr_value ? curr_value : trajectory_dms[1][i][j];
             }
@@ -639,23 +680,23 @@ std::vector<Simplex<input_t>> calculate_birth_grades2(std::vector<std::vector<st
             grade.push_back(trajectory_dms.size()-1);
             grade.push_back(0);
             grade.push_back(prev_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
+            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
         }
         
-        for (size_t time_index=2; time_index < trajectory_dms.size(); time_index++){
+        for (size_t time_simplex_index=2; time_simplex_index < trajectory_dms.size(); time_simplex_index++){
             input_t next_value = 0;
-            for (size_t i=1; i< simplices[index].vertices.size(); i++) {
+            for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
                 for (size_t j=0; j<i ; j++) {
-                    next_value = trajectory_dms[time_index][i][j] < next_value ? next_value : trajectory_dms[time_index][i][j];
+                    next_value = trajectory_dms[time_simplex_index][i][j] < next_value ? next_value : trajectory_dms[time_simplex_index][i][j];
                 }
             }
             
             if ( curr_value <= prev_value && curr_value <= next_value && curr_value < max_metric_value ) {
                 std::vector<input_t> grade;
-                grade.push_back(trajectory_dms.size()-time_index);
-                grade.push_back(time_index-1);
+                grade.push_back(trajectory_dms.size()-time_simplex_index);
+                grade.push_back(time_simplex_index-1);
                 grade.push_back(curr_value);
-                new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
+                new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
             }
             
             prev_value = curr_value;
@@ -667,103 +708,135 @@ std::vector<Simplex<input_t>> calculate_birth_grades2(std::vector<std::vector<st
             grade.push_back(0);
             grade.push_back(trajectory_dms.size()-1);
             grade.push_back(curr_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
+            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
         }
         
     }
     return new_simplices;
 }
 
-std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std::vector<input_t>>> trajectory_dms, input_t& max_metric_value, std::vector<Simplex<input_t>>& simplices) {
+input_t interlevel_rips_radius(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, std::vector<size_t>& vertices, size_t start_time, size_t end_time) {
+
+    input_t radius = 0;
+
+    for (size_t i=1; i< vertices.size(); i++) {
+        for (size_t j=0; j<i ; j++) {
+            
+            input_t edge_length = trajectory_dms[start_time][vertices[i]][vertices[j]];
+
+            for (size_t t = start_time+1; t <= end_time; t++){
+                input_t new_edge_length = trajectory_dms[t][vertices[i]][vertices[j]];
+                edge_length = new_edge_length < edge_length ? new_edge_length : edge_length;
+            }
+            
+            radius = edge_length > radius ? edge_length : radius;
+        }
+    }
+    
+    return radius;
+}
+
+std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, input_t& max_metric_value, std::vector<Simplex<input_t>>& simplices) {
     std::vector<Simplex<input_t>> new_simplices;
-    for(size_t index=0; index<simplices.size(); index++){
-        input_t prev_value = 0;
-        for (size_t i=1; i< simplices[index].vertices.size(); i++) {
-            for (size_t j=0; j<i ; j++) {
-                prev_value = trajectory_dms[0][i][j] < prev_value ? prev_value : trajectory_dms[0][i][j];
-            }
-        }
-        input_t curr_value = 0;
-        for (size_t i=1; i< simplices[index].vertices.size(); i++) {
-            for (size_t j=0; j<i ; j++) {
-                curr_value = trajectory_dms[1][i][j] < curr_value ? curr_value : trajectory_dms[1][i][j];
-            }
-        }
-        if ( prev_value < max_metric_value ) {
-            std::vector<input_t> grade;
-            grade.push_back(trajectory_dms.size()-1);
-            grade.push_back(0);
-            grade.push_back(prev_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
-        }
+
+    int num_time_steps = trajectory_dms.size();
+
+    // radius_map[t0, t1] records the radius of the current simplex under the interlevel-rips filtration at interval [t0,t1]
+    std::vector<std::vector<input_t>> radius_map(num_time_steps, std::vector<input_t>(num_time_steps, -1));
+    
+    int previous_length = 0;
+
+    // We'll go through each simplex one by one and add all the relevant grades in lex order
+    // The final result needs to be in reverse lex, so we will reverse it
+    for(size_t simplex_index=0; simplex_index<simplices.size(); simplex_index++){
         
-        for (size_t time_index=2; time_index < trajectory_dms.size(); time_index++){
-            input_t next_value = 0;
-            for (size_t i=1; i< simplices[index].vertices.size(); i++) {
-                for (size_t j=0; j<i ; j++) {
-                    next_value = trajectory_dms[time_index][i][j] < next_value ? next_value : trajectory_dms[time_index][i][j];
+
+        std::vector<size_t> vertices = simplices[simplex_index].vertices;
+
+        // std::cout << ">> Processing simplex ";
+        // for (size_t i: vertices) {
+        //     std::cout << i;
+        // }
+        
+        // std::cout << std::endl;
+            
+        // inverted_start_time = num_time_steps - 1 - start_time
+        // so start_time = num_time_steps - 1 - inverted_start_time
+        for (size_t inverted_start_time=0; inverted_start_time < num_time_steps; inverted_start_time++){
+            
+            size_t start_time = num_time_steps - 1 - inverted_start_time;
+
+            for (size_t end_time=start_time; end_time < num_time_steps; end_time++) {
+
+                input_t radius = interlevel_rips_radius(trajectory_dms, vertices, start_time, end_time);
+                
+                radius_map[start_time][end_time] = radius;
+                
+                // Check the two previous values in the filtration if they exist
+                bool inserted_already = (start_time < end_time) && ( (radius_map[start_time + 1][end_time] <= radius) ||  (radius_map[start_time][end_time-1] <= radius)) ;
+                
+                
+                // std::cout << "Processing grade" << start_time << end_time << radius << std::endl;
+
+                // if (inserted_already) {
+                //     std::cout << "INSERTED ALREADY" << std::endl;
+                // }
+                    
+                if ((!inserted_already) && (radius < max_metric_value)){
+                    // std::cout << "Inserting at grade" << start_time << end_time << radius << std::endl;
+
+                    std::vector<input_t> grade;
+                    grade.push_back(inverted_start_time);
+                    grade.push_back(end_time);
+                    grade.push_back(radius);
+                    new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(vertices), std::vector<input_t>(grade), simplex_index));
                 }
-            }
-            
-            if ( curr_value < max_metric_value ) {
-                std::vector<input_t> grade;
-                grade.push_back(trajectory_dms.size()-time_index);
-                grade.push_back(time_index-1);
-                grade.push_back(curr_value);
-                new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
-            }
-            
-            prev_value = curr_value;
-            curr_value = next_value;
+                
+            } 
+
+        }
+
+         // Reset radius_map
+        for (size_t i = 0; i < num_time_steps; i++) {
+            std::fill(radius_map[i].begin(), radius_map[i].end(), -1);
         }
         
-        if ( curr_value < max_metric_value ) {
-            std::vector<input_t> grade;
-            grade.push_back(0);
-            grade.push_back(trajectory_dms.size()-1);
-            grade.push_back(curr_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[index].vertices), std::vector<input_t>(grade), index));
-        }
-        
+        // Reverse the newly added simplices
+        std::reverse(new_simplices.begin() + previous_length, new_simplices.end());
+
+        previous_length = new_simplices.size();
+       
     }
     return new_simplices;
 }
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric, input_t max_metric_value, int hom_dim){
+std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>> compute_boundary_matrices_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric, input_t max_metric_value, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
      
-     points {std::vector<std::vector<S>>} -- a list of points in space.
-     metrics {std::vector<Metric<S>>} -- a list of metrics on the points that should be used to contruct the complex.
-     filters {std::vector<Filter<S>>} -- a list of filter functions on the points that should be used to contruct the complex.
-     max_metric_values {std::vector<S>} -- the maximum allowed distances for each metric respectively.
-     hom_dim {int} -- the dimension of the homology to be computed.
+     trajectories {std::vector<std::vector<std::vector<input_t>>>} -- a time-varying point cloud, i.e. a list of trajectories
+     metric {Metric} -- a metric on the points that should be used to contruct the complex
+     max_metric_value {input_t} -- the maximum allowed distance for the metric
+     hom_dim {int} -- the dimension of the homology to be computed
      
      */
+    std::cout << ">>> START: compute_boundary_matrices_spatiotemporal <<<" << std::endl;
     std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
-    
+    // The discretisation map on the parameters
+    std::vector<std::vector<input_t>> index_value_lists;
+
     if(trajectories.size() > 0){
         std::vector<Simplex<input_t>> low_simplices;
         std::vector<Simplex<input_t>> mid_simplices;
         std::vector<Simplex<input_t>> high_simplices;
         
+        // Distance matrix of the point cloud at each timestep
         std::vector<std::vector<std::vector<input_t>>> trajectory_dms = get_trajectory_dms(trajectories, metric);
         
-      /*  for(size_t i=0; i<trajectory_dms.size(); i++){
-            std::cout << "Trajectory dm " << i << ":" << std::endl;
-            for (size_t j=0; j<trajectory_dms[i].size(); j++){
-                std::cout << "Row " << j << ":" << std::endl;
-                for (size_t k=0; k<trajectory_dms[i][j].size(); k++){
-                    std::cout << trajectory_dms[i][j][k] << ", ";
-                }
-                std::cout << std::endl;
-            }
-        } */
-        
-        for (size_t i = 0; i < trajectories.size(); i++) {
+        for (size_t vertex = 0; vertex < trajectories.size(); vertex++) {
             std::vector<size_t> vertices;
-            vertices.push_back(i);
+            vertices.push_back(vertex);
             
             std::vector<input_t> curr_values;
             curr_values.push_back(0);
@@ -776,13 +849,14 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_spatiotemporal(std::vector<s
         
         std::vector<Simplex<input_t>> mid_simplices_extended = calculate_birth_grades(trajectory_dms, max_metric_value, mid_simplices);
         
-        std::vector<hash_map<input_t, index_t>> grade_map = compute_grade_map<input_t>(high_simplices_extended, mid_simplices_extended, low_simplices);
-        add_boundary_columns_multicritical<input_t>(high_simplices_extended, mid_simplices_extended, high_matrix, grade_map);
-        add_boundary_columns<input_t>(mid_simplices_extended, low_simplices, low_matrix, grade_map);
-        std::cout << "Finished computing boundary matrices." << std::endl;
+        std::pair<std::vector<hash_map<input_t, index_t>>,std::vector<std::vector<input_t>>> grade_map = compute_grade_map<input_t>(high_simplices_extended, mid_simplices_extended, low_simplices);
+        add_boundary_columns_multicritical<input_t>(high_simplices_extended, mid_simplices_extended, high_matrix, grade_map.first);
+        add_boundary_columns<input_t>(mid_simplices_extended, low_simplices, low_matrix, grade_map.first);
+        index_value_lists = grade_map.second;
     }
     std::cout << "Finished computing boundary matrices." << std::endl;
-    return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
+    std::cout << ">>> END: compute_boundary_matrices_spatiotemporal <<<" << std::endl;
+    return std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>(high_matrix, low_matrix, index_value_lists);
 }
 
 std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim){
@@ -814,7 +888,7 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
             
             build_VR_subcomplex_grades(points, grades, vertices, grade, max_grade, low_simplices, mid_simplices, high_simplices, hom_dim);
         }
-        std::vector<hash_map<index_t, index_t>> grade_map = compute_grade_map<index_t>(high_simplices, mid_simplices, low_simplices);
+        std::vector<hash_map<index_t, index_t>> grade_map = compute_grade_map<index_t>(high_simplices, mid_simplices, low_simplices).first;
         add_boundary_columns<index_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<index_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
@@ -847,16 +921,16 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<s
             vertices.push_back(i);
             
             std::vector<input_t> curr_values;
-            for(size_t metric_index=0; metric_index < distance_matrices.size(); metric_index++){
+            for(size_t metric_simplex_index=0; metric_simplex_index < distance_matrices.size(); metric_simplex_index++){
                 curr_values.push_back(0);
             }
-            for(size_t filter_index=0; filter_index < filters.size(); filter_index++){
-                curr_values.push_back(filters[filter_index][i]);
+            for(size_t filter_simplex_index=0; filter_simplex_index < filters.size(); filter_simplex_index++){
+                curr_values.push_back(filters[filter_simplex_index][i]);
             }
             
             build_VR_subcomplex_dm(distance_matrices, filters, vertices, curr_values, max_metric_values, low_simplices, mid_simplices, high_simplices, hom_dim);
         }
-        std::vector<hash_map<input_t, index_t>> grade_map = compute_grade_map<input_t>(high_simplices, mid_simplices, low_simplices);
+        std::vector<hash_map<input_t, index_t>> grade_map = compute_grade_map<input_t>(high_simplices, mid_simplices, low_simplices).first;
         add_boundary_columns<input_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<input_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
@@ -938,7 +1012,7 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
         }
     }
     std::vector<std::vector<double>> high_grades;
-    std::vector<std::vector<double>> index_value_lists;
+    std::vector<std::vector<double>> simplex_index_value_lists;
     std::vector<hash_map<double, index_t>> visited_map;
     //int precision = 10000000;
     for(int d=0; d<dims[0]; d++){
@@ -951,11 +1025,11 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
         for (double i; s >> i;) {
             if(reading_grade){
                 /*high_grades[d].push_back(i);
-                while(index_value_lists.size() < high_grades[d].size()){
-                    index_value_lists.push_back(std::vector<double>());
+                while(simplex_index_value_lists.size() < high_grades[d].size()){
+                    simplex_index_value_lists.push_back(std::vector<double>());
                     visited_map.push_back(hash_map<double, index_t>());
                 }
-                index_value_lists[high_grades[d].size()-1].push_back(i);*/
+                simplex_index_value_lists[high_grades[d].size()-1].push_back(i);*/
                 column.grade.push_back((int)(precision*i));
             }else{
                 column.push(column_entry_t(1, (int)i));
@@ -984,10 +1058,10 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
         for (double i; s >> i;) {
             if(reading_grade){
                 /*low_grades[d].push_back(i);
-                while(index_value_lists.size() < low_grades[d].size()){
-                    index_value_lists.push_back(std::vector<double>());
+                while(simplex_index_value_lists.size() < low_grades[d].size()){
+                    simplex_index_value_lists.push_back(std::vector<double>());
                 }
-                index_value_lists[low_grades[d].size()-1].push_back(i);*/
+                simplex_index_value_lists[low_grades[d].size()-1].push_back(i);*/
                 column.grade.push_back((int)(precision*i));
             }else{
                 column.push(column_entry_t(1, (int)i));
@@ -1006,15 +1080,15 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
         low_matrix.push_back(column);
     }
     
-    /*for(size_t i=0; i<index_value_lists.size(); i++){
-        sort(index_value_lists[i].begin(), index_value_lists[i].end());
+    /*for(size_t i=0; i<simplex_index_value_lists.size(); i++){
+        sort(simplex_index_value_lists[i].begin(), simplex_index_value_lists[i].end());
     }
     
     std::vector<hash_map<double, index_t>> grade_map;
-    for(size_t i=0; i<index_value_lists.size(); i++){
+    for(size_t i=0; i<simplex_index_value_lists.size(); i++){
         grade_map.push_back(hash_map<double, index_t>());
-        for(size_t j=0; j<index_value_lists[i].size(); j++){
-            grade_map[i][index_value_lists[i][j]] = j;
+        for(size_t j=0; j<simplex_index_value_lists[i].size(); j++){
+            grade_map[i][simplex_index_value_lists[i][j]] = j;
         }
     }
     for(size_t i=0; i<high_grades.size(); i++){
@@ -1030,10 +1104,10 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
 }
 
 void apply_diagonal_grade_transform(Matrix& columns) {
-    for (size_t col_index=0; col_index<columns.size(); col_index++) {
-        for (size_t i=0; i<columns[col_index].grade.size()-1; i++) {
-            index_t updated_value = columns[col_index].grade[i] - columns[col_index].grade[columns[col_index].grade.size()-1];
-            columns[col_index].grade[i] = updated_value >= 0 ? updated_value : 0;
+    for (size_t col_simplex_index=0; col_simplex_index<columns.size(); col_simplex_index++) {
+        for (size_t i=0; i<columns[col_simplex_index].grade.size()-1; i++) {
+            index_t updated_value = columns[col_simplex_index].grade[i] - columns[col_simplex_index].grade[columns[col_simplex_index].grade.size()-1];
+            columns[col_simplex_index].grade[i] = updated_value >= 0 ? updated_value : 0;
         }
     }
 }
