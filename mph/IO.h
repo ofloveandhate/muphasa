@@ -513,81 +513,65 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
     
 }
 
-// T is a scalar type, a distance-like number
+
 template <typename T> std::pair<std::vector<hash_map<T, index_t>>,std::vector<std::vector<T>>> compute_grade_map(std::vector<Simplex<T>>& high_simplices, std::vector<Simplex<T>>& mid_simplices, std::vector<Simplex<T>>& low_simplices){
     /* Computes the map needed to transform a 'input_t' type grading of the simplices to the 'grade_t' type used for computations. */
 
-    // for every parameter, we have a set of 
-    std::vector<std::set<T>> simplex_index_values; // chose the set for its uniquenmess property
-    size_t grade_size = 0;
+    std::vector<std::set<T>> index_values; 
+    size_t num_parameters = 0;
 
-    // this seems suspicious.  doens't every simplex have a value for every parameter?  --kate
     if(low_simplices.size()>0){
-        grade_size = low_simplices[0].grade.size();
+        num_parameters = low_simplices[0].grade.size();
     }
-    if(mid_simplices.size() > 0 && mid_simplices[0].grade.size()>grade_size){
-        grade_size = mid_simplices[0].grade.size();
+    if(mid_simplices.size() > 0 && mid_simplices[0].grade.size()>num_parameters){
+        num_parameters = mid_simplices[0].grade.size();
     }
-    // conspicuously absent, what about the high simplices?
 
-    // initialise the vector with length number of grades
-    for(size_t i=0; i<grade_size; i++){
-        simplex_index_values.push_back(std::set<T>());
+    for(size_t parameter=0; parameter<num_parameters; parameter++){
+        index_values.push_back(std::set<T>());
     }
-    // the dimension above
 
-    // for each high simplex
-    for (size_t simplex_index_column = 0; simplex_index_column < high_simplices.size(); simplex_index_column++){
-
-        // for each grade for the current simplex
-        for(size_t simplex_index_grade=0; simplex_index_grade< high_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
-
-            // a grade is composed of one value for each parameter
-            simplex_index_values[simplex_index_grade].insert(high_simplices[simplex_index_column].grade[simplex_index_grade]);
+    for (size_t simplex_index = 0; simplex_index < high_simplices.size(); simplex_index++){
+        for(size_t parameter=0; parameter< high_simplices[simplex_index].grade.size(); parameter++){
+            index_values[parameter].insert(high_simplices[simplex_index].grade[parameter]);
         }
     }
 
-    // the current dimension
-    for (size_t simplex_index_column = 0; simplex_index_column < mid_simplices.size(); simplex_index_column++){
-        for(size_t simplex_index_grade=0; simplex_index_grade< mid_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
-            simplex_index_values[simplex_index_grade].insert(mid_simplices[simplex_index_column].grade[simplex_index_grade]);
+    for (size_t simplex_index = 0; simplex_index < mid_simplices.size(); simplex_index++){
+        for(size_t parameter=0; parameter< mid_simplices[simplex_index].grade.size(); parameter++){
+            index_values[parameter].insert(mid_simplices[simplex_index].grade[parameter]);
         }
     }
 
-    // the dimension one lower
-    for (size_t simplex_index_column = 0; simplex_index_column < low_simplices.size(); simplex_index_column++){
-        for(size_t simplex_index_grade=0; simplex_index_grade< low_simplices[simplex_index_column].grade.size(); simplex_index_grade++){
-            simplex_index_values[simplex_index_grade].insert(low_simplices[simplex_index_column].grade[simplex_index_grade]);
+    for (size_t simplex_index = 0; simplex_index < low_simplices.size(); simplex_index++){
+        for(size_t parameter=0; parameter< low_simplices[simplex_index].grade.size(); parameter++){
+            index_values[parameter].insert(low_simplices[simplex_index].grade[parameter]);
         }
     }
     
     // convert sets to lists and sort them
-    std::vector<std::vector<T>> simplex_index_value_lists;
-    for(size_t i=0; i<simplex_index_values.size(); i++){
-        simplex_index_value_lists.push_back(std::vector<T>(simplex_index_values[i].begin(), simplex_index_values[i].end()));
-        sort(simplex_index_value_lists[i].begin(), simplex_index_value_lists[i].end());
+    std::vector<std::vector<T>> index_value_lists;
+    for(size_t parameter=0; parameter<num_parameters; parameter++){
+        index_value_lists.push_back(std::vector<T>(index_values[parameter].begin(), index_values[parameter].end()));
+        sort(index_value_lists[parameter].begin(), index_value_lists[parameter].end());
     }
     
     std::vector<hash_map<T, index_t>> grade_map;
 
     // construct a reverse lookup table, so given a crit value can get the simplex_index of it.
-    for(size_t param_ind=0; param_ind<simplex_index_value_lists.size(); param_ind++){
+    for(size_t parameter=0; parameter<index_value_lists.size(); parameter++){
         grade_map.push_back(hash_map<T, index_t>()); // empty hash map
 
-
-        // for each critical value, put in 
-        for(size_t crit_val_ind=0; crit_val_ind<simplex_index_value_lists[param_ind].size(); crit_val_ind++){
-            // given a crit vaue, can ell which criticial value it is.  so can take in a critical vbalue and tell you its simplex_index
-            grade_map[param_ind] [simplex_index_value_lists[param_ind][crit_val_ind]] = crit_val_ind;
+        for(size_t crit_val_ind=0; crit_val_ind<index_value_lists[parameter].size(); crit_val_ind++){
+            grade_map[parameter] [index_value_lists[parameter][crit_val_ind]] = crit_val_ind;
             //         ^^ an integer simplex_indexing the paramters
             //                      ^^ keys in the hashmap are critical values
             //                                                                   ^^ values are indices
         }
     }
-    return std::pair<std::vector<hash_map<T, index_t>>, std::vector<std::vector<T>>>(grade_map, simplex_index_value_lists);
+    return std::pair<std::vector<hash_map<T, index_t>>, std::vector<std::vector<T>>>(grade_map, index_value_lists);
     // in python, would be return [grade_map, simplex_index_value_lists]
 }
-
 
 std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
