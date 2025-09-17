@@ -374,12 +374,9 @@ template <typename T> void add_boundary_columns(std::vector<Simplex<T>>& high_si
         sort(high_simplices[simplex_index].vertices.begin(), high_simplices[simplex_index].vertices.end());
         int coeff = 1;
 
-        // pick a vertex in the simplex, one at a time.  
-        // for each not-that-vertex, we compute the corresponding simplices
-        // they're summed up
         for(size_t vertex_index = 0; vertex_index < high_simplices[simplex_index].vertices.size() ; vertex_index++){
 
-            VertexContainer vertices; // building this.  this is a summand.
+            VertexContainer vertices;
             std::vector<size_t> high_vertices; 
 
             for(size_t k=0; k < high_simplices[simplex_index].vertices.size(); k++){
@@ -621,7 +618,8 @@ std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vecto
     for (size_t i = 0; i < point_cloud.size(); i++) {
         std::vector<input_t> row;
         for (size_t j = 0; j <= i ; j++) {
-            input_t val = ((int)(1*(*metric).eval(point_cloud[i], point_cloud[j])));
+            // input_t val = ((int)(1*(*metric).eval(point_cloud[i], point_cloud[j])));
+            input_t val = (((*metric).eval(point_cloud[i], point_cloud[j])));
             row.push_back(val);
         }
         values.push_back(row);
@@ -700,7 +698,7 @@ std::vector<Simplex<input_t>> calculate_birth_grades2(std::vector<std::vector<st
 
 input_t interlevel_rips_radius(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, std::vector<size_t>& vertices, size_t start_time, size_t end_time) {
 
-    input_t radius = 0;
+    input_t radius = 0.0;
 
     for (size_t i=1; i< vertices.size(); i++) {
         for (size_t j=0; j<i ; j++) {
@@ -722,7 +720,7 @@ input_t interlevel_rips_radius(std::vector<std::vector<std::vector<input_t>>>& t
 std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, input_t& max_metric_value, std::vector<Simplex<input_t>>& simplices) {
     std::vector<Simplex<input_t>> new_simplices;
 
-    int num_time_steps = trajectory_dms.size();
+    size_t num_time_steps = trajectory_dms.size();
 
     // radius_map[t0, t1] records the radius of the current simplex under the interlevel-rips filtration at interval [t0,t1]
     std::vector<std::vector<input_t>> radius_map(num_time_steps, std::vector<input_t>(num_time_steps, -1));
@@ -736,12 +734,12 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
 
         std::vector<size_t> vertices = simplices[simplex_index].vertices;
 
-        // std::cout << ">> Processing simplex ";
-        // for (size_t i: vertices) {
-        //     std::cout << i;
-        // }
+        std::cout << ">> Processing simplex ";
+        for (size_t i: vertices) {
+            std::cout << i;
+        }
         
-        // std::cout << std::endl;
+        std::cout << std::endl;
             
         // inverted_start_time = num_time_steps - 1 - start_time
         // so start_time = num_time_steps - 1 - inverted_start_time
@@ -768,6 +766,7 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
                 if ((!inserted_already) && (radius < max_metric_value)){
                     // std::cout << "Inserting at grade" << start_time << end_time << radius << std::endl;
 
+                    std::cout << "Inserting simplex at radius " << radius << std::endl;
                     std::vector<input_t> grade;
                     grade.push_back(inverted_start_time);
                     grade.push_back(end_time);
