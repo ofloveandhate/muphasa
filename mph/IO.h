@@ -734,13 +734,6 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
 
         std::vector<size_t> vertices = simplices[simplex_index].vertices;
 
-        std::cout << ">> Processing simplex ";
-        for (size_t i: vertices) {
-            std::cout << i;
-        }
-        
-        std::cout << std::endl;
-            
         // inverted_start_time = num_time_steps - 1 - start_time
         // so start_time = num_time_steps - 1 - inverted_start_time
         for (size_t inverted_start_time=0; inverted_start_time < num_time_steps; inverted_start_time++){
@@ -766,7 +759,6 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
                 if ((!inserted_already) && (radius < max_metric_value)){
                     // std::cout << "Inserting at grade" << start_time << end_time << radius << std::endl;
 
-                    std::cout << "Inserting simplex at radius " << radius << std::endl;
                     std::vector<input_t> grade;
                     grade.push_back(inverted_start_time);
                     grade.push_back(end_time);
@@ -801,7 +793,6 @@ std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>> compute_boundary_m
      hom_dim {int} -- the dimension of the homology to be computed
      
      */
-    std::cout << ">>> START: compute_boundary_matrices_spatiotemporal <<<" << std::endl;
     std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
@@ -837,7 +828,6 @@ std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>> compute_boundary_m
         index_value_lists = grade_map.second;
     }
     std::cout << "Finished computing boundary matrices." << std::endl;
-    std::cout << ">>> END: compute_boundary_matrices_spatiotemporal <<<" << std::endl;
     return std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>(high_matrix, low_matrix, index_value_lists);
 }
 

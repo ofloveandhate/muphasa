@@ -46,36 +46,53 @@ def parse_log_level(log_level: str) -> int:
 
 
 class Grade(tuple):
-    
+
+    @classmethod
+    def _comparison_error(cls, v, w):
+        return f"Cannot compare grade of size {len(v)} with grade of size {len(w)}"
+
     def __getitem__(self, i):
-        item = super().__getitem__(self, i)
+        item = super().__getitem__(i)
         return Grade(item) if isinstance(i, slice) else item
 
     def __lt__(self, v) -> bool:
         if len(self) != len(v):
-            raise ValueError(f"Cannot compare grade of size {len(self)} with grade of size {len(v)}")
-        return all(self.__getitem__(i) < v[i] for i in range(len(self)))
+            raise ValueError(Grade._comparison_error(self, v))
+        found_difference = False
+        for x, y in zip(self, v):
+            if x > y:
+                return False
+            if x < y:
+                found_difference = True
+        return found_difference
 
     def __le__(self, v) -> bool:
         if len(self) != len(v):
-            raise ValueError(f"Cannot compare grade of size {len(self)} with grade of size {len(v)}")
+            raise ValueError(Grade._comparison_error(self, v))
         return all(self.__getitem__(i) <= v[i] for i in range(len(self)))
    
     def __gt__(self, v) -> bool:
         if len(self) != len(v):
-            raise ValueError(f"Cannot compare grade of size {len(self)} with grade of size {len(v)}")
-        return all(self.__getitem__(i) > v[i] for i in range(len(self)))
+            raise ValueError(Grade._comparison_error(self, v))
+        found_difference = False
+        for x, y in zip(self, v):
+            if x < y:
+                return False
+            if x > y:
+                found_difference = True
+        return found_difference
+
     
     def __ge__(self, v) -> bool:
         if len(self) != len(v):
-            raise ValueError(f"Cannot compare grade of size {len(self)} with grade of size {len(v)}")
+            raise ValueError(Grade._comparison_error(self, v))
         return all(self.__getitem__(i) >= v[i] for i in range(len(self)))
 
 
     @classmethod
     def colex_compare(cls, v, w):
         if len(v) != len(w):
-            raise ValueError(f"Cannot compare grade of size {len(v)} with grade of size {len(w)}")
+            raise ValueError(Grade._comparison_error(v, w))
         for vi, wi in (zip(reversed(v), reversed(w))):
             if vi < wi:
                 return -1
@@ -106,10 +123,11 @@ class SparseLandscape():
 
     def eval(self, grade, k):
         """Evaluate the landscape layer k at the given grade"""
+        grade = Grade(grade)
         if k <= 0:
             return 0
-        diffs = []  # D
-        for birth, syzygies in filter(lambda birth, _ : birth < grade, self.pairings):
+        diffs = []
+        for birth, syzygies in filter(lambda pairing : pairing[0] <= grade, self.pairings):
             low_distance = grade[-1] - birth[-1]
             high_distance = math.inf
             for syzygy in sorted(syzygies, key=functools.cmp_to_key(Grade.colex_compare)):
@@ -117,8 +135,7 @@ class SparseLandscape():
                     high_distance = syzygy[-1] - grade[-1]
                     break
             diffs.append(max(min(low_distance, high_distance), 0))
-
-        return sorted(diffs, reverse=True)[k-1] if k < len(diffs) else 0
+        return sorted(diffs, reverse=True)[k-1] if k <= len(diffs) else 0
 
 def translate_metrics_filters(metrics: List[str], filters: List[str]):
     for metric in metrics: 
