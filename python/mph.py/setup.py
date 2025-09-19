@@ -35,6 +35,9 @@ class CustomBuildExtCommand(build_ext):
         import numpy
         # Add numpy headers to include_dirs
         self.include_dirs.append(numpy.get_include())
+
+        self.include_dirs.append("/opt/homebrew/include")
+        
         # Call original build_ext command
         build_ext.run(self)
 
