@@ -1,1 +1,11 @@
 .DS_Store
+build/
+
+*.egg-info
+*.egg-info/
+*.egg
+*.o
+*.pyc
+
+
+.python-version
