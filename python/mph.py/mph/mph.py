@@ -137,6 +137,17 @@ class SparseLandscape():
             diffs.append(max(min(low_distance, high_distance), 0))
         return sorted(diffs, reverse=True)[k-1] if k <= len(diffs) else 0
 
+    def save(self, fname: str, precision=3):
+        
+        def grade_to_str(grade):
+            return ', '.join(f'{x:.{precision}f}' for x in grade)
+        
+        with open(fname, 'w', encoding="utf-8") as f:
+            for v, syzygies in self.pairings:
+                f.write('F ' + grade_to_str(v) + '\n')
+                for syzygy in syzygies:
+                    f.write('S ' + grade_to_str(syzygy) + '\n')
+
 def translate_metrics_filters(metrics: List[str], filters: List[str]):
     for metric in metrics: 
         assert metric in METRIC_DICT
