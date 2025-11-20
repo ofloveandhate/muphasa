@@ -107,19 +107,10 @@ class Grade(tuple):
     
 
 class SparseLandscape():
-    def __init__(self,
-                 pairings: List[Tuple[Grade, List[Grade]]],
-                 index_value_lists: List[List[np.float64]]
-                ):
-        
-        def transform_grade(grade: Grade) -> Grade:
-            return Grade(index_value_lists[parameter][v] for parameter, v in enumerate(grade))
 
-        self.pairings = [ (transform_grade(v), list(map(transform_grade, syzygies)))
-                                    for v, syzygies in pairings]
+    def __init__(self, pairings: List[Tuple[Grade, List[Grade]]]):
+        self.pairings = pairings
         
-        self.index_value_lists = index_value_lists
-
 
     def eval(self, grade, k):
         """Evaluate the landscape layer k at the given grade"""
@@ -136,6 +127,49 @@ class SparseLandscape():
                     break
             diffs.append(max(min(low_distance, high_distance), 0))
         return sorted(diffs, reverse=True)[k-1] if k <= len(diffs) else 0
+
+    def save(self, fname: str, precision=3):
+        
+        def grade_to_str(grade):
+            return ', '.join(f'{x:.{precision}f}' for x in grade)
+        
+        with open(fname, 'w', encoding="utf-8") as f:
+            for v, syzygies in self.pairings:
+                f.write('F ' + grade_to_str(v) + '\n')
+                for syzygy in syzygies:
+                    f.write('S ' + grade_to_str(syzygy) + '\n')
+                    
+    @classmethod
+    def load(cls, fname: str):
+        
+        pairings = []
+        
+        with open(fname, 'r', encoding='utf-8') as f:
+
+            syzygies = []
+            generator = None
+
+            for line in f.readlines():
+                tag = line[0]
+                grade = list(map(float, line[1:].rstrip().lstrip().split(', ')))
+                
+                # New generator
+                if tag == 'F':
+                    if generator is not None:
+                        pairings.append((generator, syzygies))
+                    generator = grade
+                    syzygies = []
+                # New syzygy
+                elif tag == 'S': 
+                    if generator is None:
+                        raise ValueError("Must provide a generator before a syzygy")
+                    syzygies.append(grade)
+
+            if generator is not None:
+                pairings.append((generator, syzygies)) 
+                
+        return cls(pairings)
+                
 
 def translate_metrics_filters(metrics: List[str], filters: List[str]):
     for metric in metrics: 
@@ -173,10 +207,17 @@ def compute_spatiotemporal_landscapes_sparse(trajectories: np.ndarray, max_metri
     ret = computeSpatiotemporalLandscapesSparse(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim)
     index_value_lists = ret["index_value_lists"]
     index_value_lists[2] = list(map(math.sqrt, index_value_lists[2]))
-    return SparseLandscape(ret["pairings"], index_value_lists)
+    
+    def transform_grade(grade: Grade) -> Grade:
+        return Grade(index_value_lists[parameter][v] for parameter, v in enumerate(grade))
+    
+    pairings = [ (transform_grade(v), list(map(transform_grade, syzygies)))
+                                    for v, syzygies in ret["pairings"]]
+
+    return SparseLandscape(pairings)
 
 # def compute_spatiotemporal_landscapes_naive(trajectories: np.ndarray, max_metric_value: float, hom_dim: int, landscape_dim: int):
 #     ret = computeSpatiotemporalLandscapesNaive(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim, landscape_dim)
 #     return ret
 
-__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse"]
+__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"]
