@@ -9,3 +9,12 @@ build/
 
 
 .python-version
+
+.ipynb_checkpoints/
+__pycache__/
+
+
+*.out
+
+# this is built by Cython
+pyMPH.cpp
