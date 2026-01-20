@@ -1,0 +1,10 @@
+name: mph
+channels:
+  - conda-forge
+dependencies:
+  - boost=1.85.0=hb563948_4
+  - gcc=15.2.0=h0dff253_16
+  - gxx=15.2.0=h76987e4_16
+  - numpy=1.24.4=py38h59b608b_0
+  - python=3.8.20=h4a871b0_2_cpython
+
