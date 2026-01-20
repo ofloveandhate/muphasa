@@ -1,0 +1,20 @@
+.DS_Store
+build/
+
+*.egg-info
+*.egg-info/
+*.egg
+*.o
+*.pyc
+
+
+.python-version
+
+.ipynb_checkpoints/
+__pycache__/
+
+
+*.out
+
+# this is built by Cython
+pyMPH.cpp
