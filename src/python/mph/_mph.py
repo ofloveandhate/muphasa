@@ -180,25 +180,38 @@ class SparseLandscape():
             syzygies = []
             generator = None
 
-            for line in f.readlines():
+            for lineno, line in enumerate(f.readlines()):
                 tag = line[0]
                 grade = list(map(float, line[1:].rstrip().lstrip().split(', ')))
                 
                 # New generator
                 if tag == 'F':
+
+                    # store, because found a new one.  (the only time this won't happen is the first generator)
                     if generator is not None:
                         pairings.append((generator, syzygies))
+
+                    # set the current generator
                     generator = grade
+
+                    # reset to empty for this generator.  subsequent lines will read the syz's
                     syzygies = []
+                
                 # New syzygy
                 elif tag == 'S': 
                     if generator is None:
-                        raise ValueError("Must provide a generator before a syzygy")
+                        raise ValueError(f"Must provide a generator before a syzygy.  See line {lineno} in file {fname}")
+                        
                     syzygies.append(grade)
 
+                else:
+                    raise ValueError(f"The first character of a line in a SparseLandscape file must be a valid tag (F or S).  File {fname} has {tag} at line {lineno}")
+
+            # wrap up by taking care of the last generator and its syzygyies
             if generator is not None:
                 pairings.append((generator, syzygies)) 
-                
+        
+        # finally, pass to the class constructor to make a SparseLandscape
         return cls(pairings)
                 
 
