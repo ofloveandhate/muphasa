@@ -46,6 +46,9 @@ def parse_log_level(log_level: str) -> int:
 
 
 class Grade(tuple):
+    """
+    Grades in `mph`
+    """
 
     @classmethod
     def _comparison_error(cls, v, w):
@@ -107,13 +110,19 @@ class Grade(tuple):
     
 
 class SparseLandscape():
+    """
+    SparseLandscape in `mph`
+    """
 
     def __init__(self, pairings: List[Tuple[Grade, List[Grade]]]):
         self.pairings = pairings
         
 
     def eval(self, grade, k):
-        """Evaluate the landscape layer k at the given grade"""
+        """
+        Evaluate the landscape layer k at the given grade
+        """
+
         grade = Grade(grade)
         if k <= 0:
             return 0
@@ -129,6 +138,9 @@ class SparseLandscape():
         return sorted(diffs, reverse=True)[k-1] if k <= len(diffs) else 0
 
     def save(self, fname: str, precision=3):
+        """
+        Save the `SparseLandscape` to disk, under filename `fname`, with number-of-digits precision `precision`
+        """
         
         def grade_to_str(grade):
             return ', '.join(f'{x:.{precision}f}' for x in grade)
@@ -141,6 +153,9 @@ class SparseLandscape():
                     
     @classmethod
     def load(cls, fname: str):
+        """
+        Load a SparseLandscape from file `fname`.
+        """
         
         pairings = []
         
