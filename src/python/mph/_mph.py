@@ -47,7 +47,9 @@ def parse_log_level(log_level: str) -> int:
 
 class Grade(tuple):
     """
-    Grades in `mph`
+    Grade in `mph`.  A Grade can represent either a generator or a syzygy.  It consists of, essentially, a list of floating point values.
+
+    This is derived from `tuple`, so it is an integer-indexed container starting at 0.  It provides comparitor methods <, >, <=, >=.
     """
 
     @classmethod
@@ -106,6 +108,9 @@ class Grade(tuple):
 
     @classmethod
     def join(cls, v, w):
+        """
+        Join two grades, by zipping them (as tuples) and applying the `max` function to each item.  This is essentially the component-wise max of two `Grade`s.
+        """
         return Grade(map(max, zip(v, w)))
     
 
@@ -154,9 +159,20 @@ class SparseLandscape():
     @classmethod
     def load(cls, fname: str):
         """
-        Load a SparseLandscape from file `fname`.
+        Load a `SparseLandscape` from file `fname`.
+
+        It reads a plaintext file, with lines.  Each line starts with a tag, either `F` or `S`.  
+        Behind the tag is a ", "-separated list of floats, which represent a `Grade`.  
+
+        If the tag is `F`, then the line represents a generator.
+        If the tag is `S`, then the line represents a syzygy.
+
+        The structure is an F, and then a bunch of S's.  This repeats.
+
+        If an S appears before a generator is set via an F line, a exception is raised.  
+        If a tag is invalid, an exception is raised.
         """
-        
+
         pairings = []
         
         with open(fname, 'r', encoding='utf-8') as f:
@@ -235,4 +251,4 @@ def compute_spatiotemporal_landscapes_sparse(trajectories: np.ndarray, max_metri
 #     ret = computeSpatiotemporalLandscapesNaive(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim, landscape_dim)
 #     return ret
 
-__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"]
+__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "Grade", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"]
