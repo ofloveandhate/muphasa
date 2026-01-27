@@ -18,3 +18,4 @@ __pycache__/
 
 # this is built by Cython
 pyMPH.cpp
+src/python/mph/pyMPH.cpython*.so
