@@ -109,7 +109,7 @@ class Grade(tuple):
     @classmethod
     def join(cls, v, w):
         """
-        Join two grades, by zipping them (as tuples) and applying the `max` function to each item.  This is essentially the component-wise max of two `Grade`s.
+        Join two grades, by zipping them (as tuples) and applying the `max` function to each item.  This is essentially the component-wise max of two `Grade` s.
         """
         return Grade(map(max, zip(v, w)))
     
@@ -201,7 +201,7 @@ class SparseLandscape():
                 elif tag == 'S': 
                     if generator is None:
                         raise ValueError(f"Must provide a generator before a syzygy.  See line {lineno} in file {fname}")
-                        
+
                     syzygies.append(grade)
 
                 else:
@@ -264,4 +264,5 @@ def compute_spatiotemporal_landscapes_sparse(trajectories: np.ndarray, max_metri
 #     ret = computeSpatiotemporalLandscapesNaive(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim, landscape_dim)
 #     return ret
 
-__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "Grade", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"]
+__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "Grade", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"] + ['List',
+'Tuple']

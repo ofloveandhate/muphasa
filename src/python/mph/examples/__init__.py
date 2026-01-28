@@ -79,3 +79,5 @@ def random_map_gbs(m:int, n:int, n_parameters: int=3, density:float=0.5, grade_r
 		sparse_random_matrix[entry[0]].append((random_matrix[entry[1], entry[0]], entry[1]))
 	return GradedMatrix(sparse_random_matrix, column_grades, row_grades = [ [ 0 for _ in range(len(column_grades[0])) ] for _ in range(random_matrix.shape[0])]), image_gb, kernel_gb
 
+
+__all__ = ['choose_graded_subbasis','generate_rivet_output','rivet_benchmark','random_FIrep_presentation','random_map_gbs']
