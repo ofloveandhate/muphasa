@@ -11,7 +11,7 @@ This is documentation for the Python library Muphasa, which installs under the n
 
 
 
-🏛 Reference materials
+Table of contents
 -------------------------
 
 .. toctree::
