@@ -64,9 +64,9 @@ public:
         //    return cache[&a];
         //}
         std::vector<input_t> neighbourlist;
-        Metric* m = new SquaredEuclideanMetric();
+        SquaredEuclideanMetric m;
         for(auto& p:points){
-            neighbourlist.push_back(m->eval(std::vector<input_t>(&a[0],&a[p.size()]), p));
+            neighbourlist.push_back(m.eval(std::vector<input_t>(&a[0],&a[p.size()]), p));
         }
         std::sort(neighbourlist.begin(), neighbourlist.end());
         input_t density = 0;
