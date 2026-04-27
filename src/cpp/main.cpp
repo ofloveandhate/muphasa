@@ -521,16 +521,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
                             pivot_map[pivot] = column_index;
                             gb_columns[column_index].last_updated = iter_index;
                         }else{
-                            /*if(GB[i].size()==1){
-                                gb_columns.push_back(working_column);
-                                GB[i].push_back(signature_t(grade, gb_columns.size()-1));
-                            }else{
-                                if(pivot_map[gb_columns[GB[i][1].get_index()].get_pivot_index()] == GB[i][1].get_index()){
-                                    pivot_map[gb_columns[GB[i][1].get_index()].get_pivot_index()] = -1;
-                                }
-                                gb_columns[GB[i][1].get_index()].swap(working_column);
-                                GB[i][1].first = grade;
-                            }*/
                             gb_columns.push_back(working_column);
                             GB[i].push_back(signature_t(grade, gb_columns.size()-1));
                             pivot_map[pivot] = gb_columns.size()-1;
@@ -2208,10 +2198,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
     std::vector<size_t> L_F;
     std::vector<signature_t> reorder_Z_map;
 
-    std::set<size_t> syz_pivots;
-
     size_t image_index=0;
-
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
@@ -2664,8 +2651,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
     std::vector<size_t> L_F;
     std::vector<signature_t> reorder_Z_map;
 
-    std::set<size_t> syz_pivots;
-
     size_t image_index=0;
 
     int iter_index = 0;
@@ -2724,16 +2709,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                         working_column.refresh();
                         working_column.syzygy.refresh();
                         grade_t grade = working_column.grade;
-                        /*if(GBH[i].size()==1){
-                            gb_columnsH.push_back(working_column);
-                            GBH[i].push_back(signature_t(grade, gb_columnsH.size()-1));
-                        }else{
-                            if(pivot_mapH[gb_columnsH[GBH[i][1].get_index()].get_pivot_index()] == GBH[i][1].get_index()){
-                                pivot_mapH[gb_columnsH[GBH[i][1].get_index()].get_pivot_index()] = -1;
-                            }
-                            gb_columnsH[GBH[i][1].get_index()] = working_column;
-                            GBH[i][1].first = grade;
-                        }*/
                         gb_columnsH.push_back(working_column);
                         GBH[i].push_back(signature_t(grade, gb_columnsH.size()-1));
                         pivot_mapH[pivot] = gb_columnsH.size()-1;
@@ -2760,7 +2735,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                         }
                     }else{
                         working_column.syzygy.refresh();
-                       // if(syz_pivots.find(i) == syz_pivots.end()){
                             syzygiesH.push_back(SignatureColumn(working_column.grade, syzygiesH.size(), working_column.syzygy));
                             SyzH[i].push_back(signature_t(working_column.grade, syzygiesH.size()-1));
                             syzygiesH[syzygiesH.size()-1].last_updated = iter_index;
@@ -2816,12 +2790,8 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                     }
                     grade_listsH[pivot].push_back(working_column.grade);
                 }
-                //working_column.syzygy = SyzColumn();
-                //working_column.syzygy.push(column_entry_t(1, gb_columnsH.size()-1));
-                //syzygiesH.push_back(SignatureColumn(working_column.grade, syzygiesH.size(), working_column.syzygy));
             }else{
                 syzygiesH.push_back(SignatureColumn(working_column.grade, syzygiesH.size(), working_column.syzygy));
-                //syz_pivots.insert(working_column.syzygy.get_pivot_index());
             }
             image_index++;
         }
@@ -3724,18 +3694,6 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                     working_column.push(column_entry_t(1, basis_order_map[column.signature_index]));
                     A.push_back(working_column);
                 }
-
-               /*     size_t pivot_index = 0;
-                for (size_t i=0; i<row_grades.size(); i++) {
-                    if ( row_grades[i].leq_poset(w) ) {
-                        if ( row_grades[i][v.size()-1] <= v[v.size()-1]-k ) {
-                            SignatureColumn working_column(row_grades[i], A.size());
-                            working_column.push(column_entry_t(1, pivot_index));
-                            A.push_back(working_column);
-                        }
-                        pivot_index++;
-                    }
-                }*/
 
                 Matrix inter = matmul(A, H_basis);
                 Matrix B = matmul(H_basis_inv, inter);
