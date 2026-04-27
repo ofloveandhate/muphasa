@@ -18,3 +18,5 @@ __pycache__/
 
 # this is built by Cython
 pyMPH.cpp
+
+data/

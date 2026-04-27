@@ -11,6 +11,7 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <stdexcept>
 #include "utils.h"
 #include "grade.h"
 #include "signatureColumn.h"
@@ -338,7 +339,7 @@ void critical_points_geometric_pres(){
                 c.pop_pivot();
             }
             if(z.get_pivot_index() != -1){
-                throw "Image does not map to kernel";
+                throw std::runtime_error("Image does not map to kernel");
             }
         }
         

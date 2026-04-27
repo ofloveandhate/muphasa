@@ -1,6 +1,8 @@
 #ifndef MPH_MATRIX_INCLUDED
 #define MPH_MATRIX_INCLUDED
 
+#include <stdexcept>
+
 #include "signatureColumn.h"
 
 struct Matrix : std::vector<SignatureColumn>{
@@ -202,7 +204,7 @@ public:
                 return values[key%keys.size()][i];
             }
         }
-        throw "Could not find the values corresponding to key: "+std::to_string(key);
+        throw std::runtime_error("Could not find the values corresponding to key: "+std::to_string(key));
         return -1;
     }
     

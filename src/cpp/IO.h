@@ -2,6 +2,7 @@
 #define MPH_IO_INCLUDED
 
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 #include "utils.h"
 #include "grade.h"
@@ -254,7 +255,7 @@ template <typename T> void add_boundary_columns_multicritical(std::vector<Simple
             size_t m = map[vertices];
             low_vertices = low_simplices[map[vertices]-diff].vertices;
             if( low_vertices != high_vertices){
-                throw " Inconsistent basis ";
+                throw std::runtime_error(" Inconsistent basis ");
             }
             column.push(column_entry_t(coeff, map[vertices]-diff));
             //coeff *= -1; //TODO: handle more types of coefficients than F_2.

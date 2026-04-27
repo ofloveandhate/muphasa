@@ -591,7 +591,7 @@ void verify_kernel(Matrix& kernel, Matrix& map){
         index_t pivot = result.get_pivot().get_index();
         if(pivot!=-1){
             std::cerr << "Column is not in kernel of map";
-            throw "Kernel verification failed.";
+            throw std::runtime_error("Kernel verification failed.");
         }
     }
     std::cout << "Finished verifying kernel of map.";

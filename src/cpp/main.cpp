@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 #include <queue>
 #include <iostream>
@@ -1750,7 +1751,7 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
                 index_t pivot = column_to_reduce.get_pivot().get_index();
                 while(pivot != -1){
                     if(pivot_partition.find(pivot) == pivot_partition.end()){
-                        throw "Unkown pivot.";
+                        throw std::runtime_error("Unkown pivot.");
                     }
                     bool has_reduced = false;
                     for(auto& column : pivot_partition[pivot]){
@@ -1762,7 +1763,7 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
                         }
                     }
                     if(!has_reduced){
-                        throw "Could not reduce column.";
+                        throw std::runtime_error("Could not reduce column.");
                     }
                     pivot = column_to_reduce.get_pivot().get_index();
                 }
@@ -3154,7 +3155,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
             if(pivot != -1){
                 if(pivot_map[pivot] == -1){
                     std::cerr << "Cannot express image column in terms of kernel. Throwing exception...";
-                    throw "Failed to express image column in terms of kernel generating set.";
+                    throw std::runtime_error("Failed to express image column in terms of kernel generating set.");
                 }
                 column.plus(generating_set_kernel[pivot_map[pivot]]);
             }else{
@@ -3255,7 +3256,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
                 }
             }
             if(!has_eliminated){
-                throw "Cannot express image column in terms of kernel.";
+                throw std::runtime_error("Cannot express image column in terms of kernel.");
             }
             pivot = working_column.get_pivot_index();
         }
@@ -3290,7 +3291,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
         }
         if(debug){
             if(syz_column.grade != column.grade){
-                throw "Grade of columns has changed.";
+                throw std::runtime_error("Grade of columns has changed.");
             }
             SignatureColumn ker_column(syz_column.grade, syz_column.signature_index);
             SignatureColumn copy(column);
@@ -3306,7 +3307,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
                 column.print();
                 std::cout << "\n";
                 ker_column.print();
-                throw "Column non-zero";
+                throw std::runtime_error("Column non-zero");
             }
         }
         if(column.get_pivot().get_index() != -1){
@@ -3504,7 +3505,7 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                 }
                 
                 if ( pivot_index != reduced_basis.size() ) {
-                    throw "not basis";
+                    throw std::runtime_error("not basis");
                 }
                 
                 // Reindex reduced_basis
@@ -3538,7 +3539,7 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                     while(!I[i].empty()) {
                         column_entry_t p = I[i].pop_pivot();
                         if ( p.get_index() != i ) {
-                            throw "Non-identity matrix";
+                            throw std::runtime_error("Non-identity matrix");
                         }
                     }
                 }*/
@@ -3681,7 +3682,7 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                 }
                 
                 if ( pivot_index != reduced_basis.size() ) {
-                    throw "not basis";
+                    throw std::runtime_error("not basis");
                 }
                 
                 // Reindex reduced_basis
@@ -3715,7 +3716,7 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                     while(!I[i].empty()) {
                         column_entry_t p = I[i].pop_pivot();
                         if ( p.get_index() != i ) {
-                            throw "Non-identity matrix";
+                            throw std::runtime_error("Non-identity matrix");
                         }
                     }
                 }
@@ -3833,7 +3834,7 @@ Metric* parse_metric(int metric_index){
         case 0:
             return new SquaredEuclideanMetric();
         default:
-            throw "Failed to parse metric";
+            throw std::runtime_error("Failed to parse metric");
     }
 }
 
@@ -3845,7 +3846,7 @@ Filter* parse_filter(int filter_index){
         case -1:
             return new XFilter(0); //TODO: implement more filters.
         default:
-            throw "Failed to parse metric";
+            throw std::runtime_error("Failed to parse metric");
     }
 }
 

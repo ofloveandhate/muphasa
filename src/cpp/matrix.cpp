@@ -159,7 +159,7 @@ Matrix inverse(Matrix& M) {
             pivot = working_column.get_pivot().get_index();
         }
         if (pivot != -1) {
-            throw "Failed to compute inverse";
+            throw std::runtime_error("Failed to compute inverse");
         }
         SignatureColumn inv_col(M[i].grade, M[i].get_pivot().get_index(), working_column.syzygy);
         M_inv.push_back(inv_col);
