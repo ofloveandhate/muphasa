@@ -35,17 +35,17 @@ double virt_memory=0;
 std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -57,7 +57,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::vector<std::vector<index_t>> grade_base_set = get_grade_base_set<SignatureColumn>(columns);
     int n_total_grades = 1;
@@ -65,20 +65,20 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
         n_total_grades *= grade_list.size();
     }
     Iterator_lex grade_iterator = Iterator_lex(grade_base_set);
-    
+
     /* Vectors to store the columns of the GBs */
     std::vector<SignatureColumn> gb_columns;
     std::vector<SignatureColumn> syzygies;
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -88,9 +88,9 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
         }
     }
     index_t pivot;
-    
+
     int iter_index = 0;
-    
+
     while(grade_iterator.has_next()){
         grade_t& v = grade_iterator.next();
         iter_index++;
@@ -157,7 +157,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
             }
         }
     }
-    
+
     Matrix syzygies_output;
     syzygies_output.reserve(syzygies.size());
     for(size_t i=0; i<Syz.size(); i++){
@@ -179,17 +179,17 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
 std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -201,29 +201,29 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::unordered_set<grade_t, GradeHasher> visited_grades;
-    
+
     /* Vectors to store the columns of the GBs */
     std::vector<SignatureColumn> gb_columns;
     std::vector<VectorColumn> syzygies;
     gb_columns.reserve(2*columns.size());
     syzygies.reserve(columns.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(columns.size());
     Syz.reserve(columns.size());
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -241,7 +241,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
             visited_grades.insert(column.grade);
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
@@ -250,19 +250,19 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
     }
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     index_t pivot;
-    
+
     int iter_index = 0;
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
         while(v == grades.top()){
             grades.pop();
         }
-        
+
         size_t grade_hash = grade_hasher(v);
         iter_index++;
-        
+
         /* Initialize Macaulay matrix */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -371,7 +371,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
             }
         }
     }
-    
+
     Matrix syzygies_output;
     syzygies_output.reserve(syzygies.size());
     for(size_t i=0; i<Syz.size(); i++){
@@ -393,17 +393,17 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
 std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -415,29 +415,29 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::unordered_set<grade_t, GradeHasher> visited_grades;
-    
+
     /* Vectors to store the columns of the GBs */
     Matrix gb_columns;
     Matrix syzygies;
     gb_columns.reserve(columns.size());
     syzygies.reserve(columns.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(columns.size());
     Syz.reserve(columns.size());
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -452,18 +452,18 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
     for(auto& column : columns){
         grades.push(column.grade);
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
     for(auto& c : columns){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     index_t pivot;
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     int iter_index = 0;
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
@@ -472,7 +472,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
         }
         size_t grade_hash = grade_hasher(v);
         iter_index++;
-        
+
         /* Initialize Macaulay matrix */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -547,7 +547,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
                                 grade_lists[pivot].push_back(grade);
                             }
                         }
-                       
+
                     }else{
                         if(is_new){
                             gb_columns.pop_back();
@@ -577,9 +577,9 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
             }
         }
     }
-    
+
     get_mem_usage(virt_memory, res_memory);
-    
+
     std::cout << "Finished computing Groebner bases." << std::endl;
     return std::pair<Matrix, Matrix>(gb_columns, syzygies);
 }
@@ -587,17 +587,17 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
 Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -609,28 +609,28 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
-    
+
     /* Vectors to store the columns of the GBs */
     std::vector<SignatureColumn> gb_columns;
     std::vector<SyzColumn> syzygies;
     gb_columns.reserve(2*columns.size());
     syzygies.reserve(columns.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(columns.size());
     Syz.reserve(columns.size());
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -645,11 +645,11 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
     for(auto& column : columns){
         grades.push(column.grade);
     }
-    
+
     index_t pivot;
-    
+
     int iter_index = 0;
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
@@ -723,7 +723,7 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
                                 grade_lists[pivot].push_back(grade);
                             }
                         }
-                       
+
                     }else{
                         working_column.syzygy.refresh();
                         syzygies.push_back(working_column.syzygy);
@@ -753,7 +753,7 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
             }
         }
     }
-    
+
     Matrix syzygies_output;
     syzygies_output.reserve(syzygies.size());
     for(size_t i=0; i<Syz.size(); i++){
@@ -768,17 +768,17 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
 Matrix ImageGB(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -790,27 +790,27 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::unordered_set<grade_t, GradeHasher> visited_grades;
-    
+
     /* Vectors to store the columns of the GBs */
     Matrix gb_columns;
     gb_columns.reserve(columns.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(columns.size());
     Syz.reserve(columns.size());
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -828,18 +828,18 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
             visited_grades.insert(column.grade);
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
     for(auto& c : columns){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     index_t pivot;
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     int iter_index = 0;
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
@@ -848,7 +848,7 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
         }*/
         size_t grade_hash = grade_hasher(v);
         iter_index++;
-        
+
         /* Initialize Macaulay matrix */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -909,7 +909,7 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
                                 grade_lists[pivot].push_back(working_column.grade);
                             }
                         }
-                       
+
                     }else{
                         if(is_new){
                             gb_columns.pop_back();
@@ -946,18 +946,18 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
 std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_gradeopt_min_sig_basis(std::vector<SignatureColumn>& columns, MultigradedBasis ker_basis){
     /*
      The main function computing a Groebner basis for the image and kernel of the map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
      ker_basis {MultigradedBasis} assumed to be sorted in lex.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -969,29 +969,29 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
         columns[i].signature_index = i;
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::unordered_set<grade_t, GradeHasher> visited_grades;
-    
+
     /* Vectors to store the columns of the GBs */
     std::vector<SignatureColumn> gb_columns;
     std::vector<VectorColumn> syzygies;
     gb_columns.reserve(2*columns.size());
     syzygies.reserve(columns.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(columns.size());
     Syz.reserve(columns.size());
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -1015,7 +1015,7 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
             visited_grades.insert(entry.first);
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
@@ -1024,25 +1024,25 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
     }
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     index_t pivot;
-    
+
     int iter_index = 0;
-    
+
     std::vector<std::pair<grade_t, std::vector<size_t>>> sig_basis;
-    
+
     size_t ker_basis_index = 0;
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
         while(v == grades.top()){
             grades.pop();
         }
-        
+
         size_t grade_hash = grade_hasher(v);
         iter_index++;
-        
+
         std::vector<size_t> sig_basis_at_v;
-        
+
         /* Initialize Macaulay matrix */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -1166,17 +1166,17 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
 CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& presentation, std::vector<grade_t> row_grades){
     /*
      The main function computing a compressed persistence landscape from a minimal presentation described by the list of columns 'presentation' and the row grades 'row_grades'.
-     
+
      Arguments:
      presentation {std::vector<SignatureColumn>} -- columns describing a minimal presentation.
      row_grades {std::vector<grade_t>} grades of the rows in the matrix 'presentation'.
-     
+
      Returns:
      CompressedLandscape -- a compressed representation of a multiparameter persistence landscape.
      */
-    
+
     std::cout << "Starting to compute persistence landscape..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(presentation.begin(), presentation.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -1188,27 +1188,27 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
         presentation[i].signature_index = i;
         index_map_high[presentation[i].grade[presentation[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::unordered_set<grade_t, GradeHasher> visited_grades;
-    
+
     /* Vectors to store the columns of the GBs */
     std::vector<SignatureColumn> gb_columns;
     gb_columns.reserve(2*presentation.size());
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB;
     std::vector<std::vector<signature_t>> Syz;
     GB.reserve(presentation.size());
     Syz.reserve(presentation.size());
-    
+
     for(size_t i=0; i<presentation.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -1226,7 +1226,7 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
             visited_grades.insert(column.grade);
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(presentation.size());
     GradeHasher grade_hasher;
@@ -1235,24 +1235,24 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
     }
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     index_t pivot;
-    
+
     int iter_index = 0;
 
     CompressedLandscape landscape;
     for(size_t i=0; i<row_grades.size(); i++){
         landscape.push_back(std::pair<grade_t, std::vector<grade_t>>(row_grades[i], std::vector<grade_t>()));
     }
-    
+
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
         while(v == grades.top()){
             grades.pop();
         }
-        
+
         size_t grade_hash = grade_hasher(v);
         iter_index++;
-        
+
         /* Initialize Macaulay matrix */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -1397,8 +1397,8 @@ DiagLandscape computeSparseDiagLandscape(Matrix& presentation, std::vector<grade
             column.grade[n_grade-1] = column.grade[i];
             column.grade[i] = val;
         }
-        
-        
+
+
         // Also switch index of rows and reorder, then keep track of reordering so it can be mapped back to the original index
         std::vector<std::pair<size_t, grade_t>> zipped_row_grades;
         size_t index = 0;
@@ -1410,19 +1410,19 @@ DiagLandscape computeSparseDiagLandscape(Matrix& presentation, std::vector<grade
             zipped_row_grades.push_back(std::pair<size_t, grade_t>(index, new_grade));
             index++;
         }
-        
+
         sort(zipped_row_grades.begin(), zipped_row_grades.end(), [ ](  std::pair<size_t, grade_t>& lhs,  std::pair<size_t, grade_t>& rhs )
              {
                  return lhs.second.lt_colex(rhs.second);
              });
-        
+
         std::vector<grade_t> new_row_grades;
         hash_map<size_t, size_t> row_reorder_map;
         for(size_t j=0; j<zipped_row_grades.size(); j++){
             new_row_grades.push_back(zipped_row_grades[j].second);
             row_reorder_map[zipped_row_grades[j].first] = j;
         }
-        
+
         Matrix reindex_presentation;
         for(size_t i=0; i<presentation_copy.size(); i++) {
             SignatureColumn pres_copy(presentation_copy[i]);
@@ -1433,7 +1433,7 @@ DiagLandscape computeSparseDiagLandscape(Matrix& presentation, std::vector<grade
             }
             reindex_presentation.push_back(working_column);
         }
-        
+
         CompressedLandscape c_landscape = computeCompressedLandscape(presentation_copy, new_row_grades);
         for(size_t j=0; j<row_grades.size(); j++){
             landscape[zipped_row_grades[j].first].second.push_back(c_landscape[j].second);
@@ -1481,7 +1481,7 @@ Matrix buchberger(Matrix& columns){
             if(has_reduced){
                 pivot = c.get_pivot_index();
             }else{
-                
+
                 for(size_t i=0; i<G.size(); i++){
                     if(G[i].get_pivot_index() == pivot){
                         M.push(std::pair<size_t, size_t>(i, G.size()));
@@ -1492,7 +1492,7 @@ Matrix buchberger(Matrix& columns){
                 break;
             }
         }
-        
+
     }
     std::cout << "Finished computing a GB of size: " << G.size() << std::endl;
     return G;
@@ -1501,17 +1501,17 @@ Matrix buchberger(Matrix& columns){
 Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
     /*
      The main function computing a Groebner basis for the kernel of the bigraded map described by the list of columns 'columns'.
-     
+
      Arguments:
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded momdules.
-     
+
      Returns:
      std::vector<SignatureColumn> -- a list of vectors decribing a minimal Groebner basis for the image of the map.
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
-    
+
     std::cout << "Starting to compute Groebner bases..." << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -1526,7 +1526,7 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
             index_map_low[columns[i].grade[columns[i].grade.size()-1]] = i;
         }
     }
-    
+
     /* Compute index set iterator */
     std::vector<std::vector<index_t>> grade_base_set = get_grade_base_set<SignatureColumn>(columns);
     int n_total_grades = 1;
@@ -1534,21 +1534,21 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
         n_total_grades *= grade_list.size();
     }
     Iterator_lex grade_iterator = Iterator_lex(grade_base_set);
-    
+
     std::vector<SyzColumn> syzygies;
     std::vector<std::vector<signature_t>> Syz;
-    
+
     for(size_t i=0; i<columns.size(); i++){
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     index_t pivot;
     std::vector<index_t> pivot_map(columns.size(), -1);
-    
+
     while(grade_iterator.has_next()){
         grade_t& v = grade_iterator.next();
-        
+
         /* Initialize Macaulay matrix */
         for( size_t i=index_map_low[v[v.size()-1]]; i<=index_map_high[v[v.size()-1]] && columns[i].grade[0] <= v[0]; i++ ){
             if(columns[i].size()>0){
@@ -1576,7 +1576,7 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
             }
         }
     }
-    
+
     Matrix syzygies_output;
     syzygies_output.reserve(syzygies.size());
     for(size_t i=0; i<Syz.size(); i++){
@@ -1592,20 +1592,20 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
 
 hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, grade_t>& row_grades){
     /** Computes the local positive and negative pairs of columns and pivots.
-     
+
      Arguments:
      columns {Matrix} -- the matrix with columns to be labeled local positive, negative or global.
      row_grades {std::vector<grade_t>} -- a list of the multigrade of each row.
-     
+
      Returns:
      hash_map<size_t, size_t> -- a map that sends a local positive row to a local negative column.
-     
+
      */
     std::cout << "Starting to compute local pairs...";
     hash_map<size_t, size_t> pairs;
     for(size_t column_index=0; column_index < columns.size(); column_index++){
         if(columns[column_index].local != 1 && columns[column_index].get_pivot().get_index() != -1 && row_grades[columns[column_index].get_pivot().get_index()] == columns[column_index].grade){
-            
+
             if(pairs.find(columns[column_index].get_pivot().get_index()) != pairs.end()){
                 SignatureColumn working_column(columns[column_index].grade, -1);
                 size_t column_to_add = column_index;
@@ -1636,18 +1636,18 @@ hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, g
 
 Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positive_pairs, std::set<size_t>& negative_rows){
     /** Performs the presentation minimization step by removing local positive and negative columns.
-     
+
      Arguments:
      columns {Matrix} -- a matrix with columns labeled local positive, negative or global.
      positive_pairs {hash_map<size_t, size_t>} -- a map sending local positive rows to local negative columns.
      negative_rows {std::set<size_t>} -- a set containing the indices of local negative rows.
-     
+
      Returns:
      Matrix -- a minimized presentation matrix.
-     
+
      */
     std::cout << "Starting to compute global columns...";
-    
+
     Matrix global_columns;
     for(size_t index_column_to_reduce = 0; index_column_to_reduce<columns.size();index_column_to_reduce++) {
         if(columns[index_column_to_reduce].local != 0)
@@ -1680,13 +1680,13 @@ Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positiv
 
 Matrix compute_syzygy_module(Matrix groebner_basis){
     /** Computes the syzygy module of a Groebner basis using Schreyer's algorithm.
-     
+
     */
-    
+
     for(size_t i=0; i<groebner_basis.size(); i++){
         groebner_basis[i].signature_index = i;
     }
-    
+
     hash_map<size_t, std::vector<SignatureColumn>> pivot_partition;
     for(size_t i=0; i<groebner_basis.size(); i++){
         if(pivot_partition.find(groebner_basis[i].get_pivot().get_index()) == pivot_partition.end()){
@@ -1697,21 +1697,11 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
     Matrix syzygies;
     for(auto& entry : pivot_partition){
         std::vector<SignatureColumn>& columns = entry.second;
-        //Matrix M;
-        //for(auto& column : columns){
-        //    M.push_back(column);
-        //}
-        //std::cout << "Partition for pivot " << entry.first << "\n";
-        //M.print();
         for(size_t i=1; i<columns.size(); i++){
             std::vector<grade_t> minimal_elements_tmp;
             std::vector<size_t> minimal_indices_tmp;
             for(size_t j=0; j<i; j++){
                 grade_t m_ji = columns[j].grade.m_ji(columns[i].grade);
-                //spdlog::info("m_ji...");
-                //columns[j].grade.print();
-                //columns[i].grade.print();
-                //m_ji.print();
                 bool is_minimal = true;
                 for(auto& el : minimal_elements_tmp){
                     if(el.leq_poset(m_ji)){
@@ -1719,7 +1709,6 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
                         break;
                     }
                 }
-                //std::cout << "Is minimal: " << is_minimal << "\n";
                 if(is_minimal){
                     minimal_elements_tmp.push_back(m_ji);
                     minimal_indices_tmp.push_back(j);
@@ -1772,7 +1761,7 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
                 if(syzygy.get_pivot().get_index() != -1){
                     syzygies.push_back(syzygy);
                 }
-                
+
             }
         }
     }
@@ -1781,68 +1770,68 @@ Matrix compute_syzygy_module(Matrix groebner_basis){
 
 Matrix compute_minimal_generating_set(Matrix& generators){
     /** Computes a minimal generating set for the module described by the columns in 'generators'.
-     
+
      Arguments:
      generators {Matrix} -- a matrix whose columns a generators of a module.
-     
+
      Returns:
      Matrix -- a subset of the columns of 'generators' that constitute a minimal set of generators for the module.
      */
-    
+
     /* Vectors to store the columns of the GBs */
     std::cout << "Starting to compute minimal generating set for columns of size: " << generators.size() << std::endl;
-    
+
     /* Sort columns colexicographically */
     sort(generators.begin(), generators.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade.lt_colex(rhs.grade);
          });
-    
+
     Matrix gb_columns;
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB; //The columns of 'generators' with a non-empty signature list is a generator.
     std::vector<std::vector<signature_t>> Syz;
-    
+
     for(size_t i=0; i<generators.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
         generators[i].signature_index = i;
     }
-    
+
     hash_map<size_t, size_t> index_map_high;
     for(size_t i=0; i<generators.size(); i++){
         generators[i].signature_index = i;
         index_map_high[generators[i].grade[generators[i].grade.size()-1]] = i;
     }
-    
+
     std::vector<grade_t> index_list;
     for(size_t column_index=0 ; column_index<generators.size(); column_index++){
         index_list.push_back(generators[column_index].grade);
     }
     sort(index_list.begin(), index_list.end()); // Sort grades lexicographically
-    
-    
+
+
     index_t max_pivot=0;
     for(auto& generator : generators){
         if(max_pivot < generator.get_pivot_index()){
             max_pivot = generator.get_pivot_index();
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(generators.size());
     GradeHasher grade_hasher;
     for(auto& c : generators){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t pivot;
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     int iter_index = 0;
-    
+
     for(size_t index=0 ; index<index_list.size(); index++){
         if(index > 0 && index_list[index]==index_list[index-1]){
             continue;
@@ -1850,8 +1839,8 @@ Matrix compute_minimal_generating_set(Matrix& generators){
         grade_t v = index_list[index];
         iter_index++;
         size_t grade_hash = grade_hasher(v);
-        
-        
+
+
         /* Initialize Macaulay matrix */
         for( size_t i=0; i<=index_map_high[v[v.size()-1]]; i++ ){
             column_index = -1;
@@ -1927,39 +1916,39 @@ Matrix compute_minimal_generating_set(Matrix& generators){
 
 std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators){
     /** Computes a minimal generating set for the module described by the columns in 'generators'.
-     
+
      Arguments:
      generators {Matrix} -- a matrix whose columns a generators of a module.
-     
+
      Returns:
      Matrix -- a subset of the columns of 'generators' that constitute a minimal set of generators for the module.
      */
-    
+
     /* Vectors to store the columns of the GBs */
     std::cout << "Starting to compute minimal generating set for columns of size: " << generators.size()  << std::endl;
-    
+
     for(size_t i=0; i<generators.size(); i++){
         generators[i].signature_index = i;
     }
-    
+
     /* Sort columns colexicographically */
     sort(generators.begin(), generators.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade.lt_colex(rhs.grade);
          });
-    
+
     hash_map<size_t, size_t> reorder_map;
     for(size_t i=0; i<generators.size(); i++){
         reorder_map[i] = generators[i].signature_index;
     }
-    
+
     Matrix gb_columns;
     std::vector<SyzColumn> syzygies;
-    
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB; //The columns of 'generators' with a non-empty signature list is a generator.
     std::vector<std::vector<signature_t>> Syz;
-    
+
     for(size_t i=0; i<generators.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
@@ -1967,38 +1956,38 @@ std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators){
         generators[i].syzygy = SyzColumn();
         generators[i].syzygy.push(column_entry_t(1, i));
     }
-    
+
     hash_map<size_t, size_t> index_map_high;
     for(size_t i=0; i<generators.size(); i++){
         index_map_high[generators[i].grade[generators[i].grade.size()-1]] = i;
     }
-    
+
     std::vector<grade_t> index_list;
     for(size_t column_index=0 ; column_index<generators.size(); column_index++){
         index_list.push_back(generators[column_index].grade);
     }
     sort(index_list.begin(), index_list.end()); // Sort grades lexicographically
-    
+
     index_t max_pivot=0;
     for(auto& generator : generators){
         if(max_pivot < generator.get_pivot().get_index()){
             max_pivot = generator.get_pivot().get_index();
         }
     }
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(generators.size());
     GradeHasher grade_hasher;
     for(auto& c : generators){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t pivot;
-    
+
     int iter_index = 0;
-    
+
     for(size_t index=0 ; index<index_list.size(); index++){
        // if(index > 0 && index_list[index]==index_list[index-1]){
        //     continue;
@@ -2092,7 +2081,7 @@ std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators){
             change_of_basis_map.push_back(column);
         }
     }
-    
+
     sort(change_of_basis_map.begin(), change_of_basis_map.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.signature_index < rhs.signature_index;
@@ -2116,22 +2105,22 @@ void insert_sorted( std::vector<signature_t>& cont, signature_t value ) {
 std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image_columns, Matrix& columns, bool debug){
     /*
      The main function computing a minimal presentation of the homology of the chain complex
-     
+
                                     C ->^F A ->^G B
-     
+
      where the columns of F are given by 'image_columns' and the columns of G by 'columns'.
-     
+
      Arguments:
      image_columns {std::vector<SignatureColumn>} -- a minimal generating set of the image map.
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded modules.
-     
+
      Returns:
      Matrix -- the minimal presentation matrix.
      hash_map<size_t, grade_t> -- a map of the row grades.
      */
-    
+
     std::cout << "Starting to presentation degree by degree..."  << std::endl;
-    
+
     /* Sort columns colexicographically */
     for(size_t i=0; i<columns.size(); i++){
         columns[i].signature_index = i;
@@ -2144,7 +2133,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
     for(size_t j=0; j<columns.size(); j++){
         kernel_reorder_map[columns[j].signature_index] = j;
     }
-    
+
     // Reindex image columns
     for(size_t i=0; i<image_columns.size(); i++) {
         SignatureColumn image_copy(image_columns[i]);
@@ -2167,25 +2156,25 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
         columns[i].syzygy.push(column_entry_t(1, i));
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::vector<std::vector<grade_t>> grade_listsH;
-    
+
     /* Vectors to store the columns of the GBs */
     Matrix gb_columns, gb_columnsH, syzygiesH;
-    
-    
+
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB, GBH;
     std::vector<std::vector<signature_t>> Syz, SyzH;
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -2205,34 +2194,34 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
         grades.push(column.grade);
     }
     index_t pivot;
-    
+
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     std::vector<index_t> pivot_mapH(columns.size(), -1);
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
     for(auto& c : columns){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     std::vector<size_t> L_F;
     std::vector<signature_t> reorder_Z_map;
-    
+
     std::set<size_t> syz_pivots;
-    
+
     size_t image_index=0;
-    
+
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
         while(v == grades.top()){
             grades.pop();
         }
-    
+
         iter_index++;
         size_t grade_hash = grade_hasher(v);
-        
+
         // B^h_z
         for( auto& signature : reorder_Z_map ){
             size_t i = signature.get_index();
@@ -2247,7 +2236,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
                     }
                 }
             }
-            
+
             if(!in_syz){
                 size_t gb_size = GBH[i].size();
                 for(size_t j=gb_size-1; j < gb_size; j--){
@@ -2257,8 +2246,8 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
                     }
                 }
             }
-            
-            
+
+
             if(column_index > -1){
                 pivot = gb_columnsH[column_index].get_pivot_index();
                 if(pivot > -1 && pivot_mapH[pivot] > -1 && gb_columnsH[pivot_mapH[pivot]].last_updated == iter_index){
@@ -2309,7 +2298,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
                 }
             }
         }
-        
+
         /* Reduce image columns */
         while(image_index < image_columns.size() && image_columns[image_index].grade == v){
             SignatureColumn working_column(image_columns[image_index]);
@@ -2354,7 +2343,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
             }
             image_index++;
         }
-        
+
         /* Reduce columns of map G */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -2516,7 +2505,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
                                     grade_listsH[i].push_back(working_column.grade);
                                 }
                             }
-                        
+
                         }
                     }
                 }
@@ -2524,7 +2513,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
         }
     }
     std::cout << "Nonminimal presentation of size "<< syzygiesH.size() << std::endl;
-    
+
     Matrix filtered_gb_columnsH;
     size_t j = 0;
     for(size_t i=0; i<GBH.size(); i++){
@@ -2534,17 +2523,17 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
             filtered_gb_columnsH.push_back(gb_columnsH[GBH[i][0].get_index()]);
         }
     }
-    
+
     sort(filtered_gb_columnsH.begin(), filtered_gb_columnsH.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade.lt_colex(rhs.grade);
          });
-    
+
     hash_map<size_t, size_t> signature_map;
     for(size_t j=0; j<filtered_gb_columnsH.size(); j++){
         signature_map[filtered_gb_columnsH[j].signature_index] = j;
     }
-    
+
     // Reindex syzygiesH
     Matrix reindexed_syzygies;
     for(size_t i=0; i<syzygiesH.size(); i++) {
@@ -2556,38 +2545,38 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
         }
         reindexed_syzygies.push_back(working_column);
     }
-    
+
     reindexed_syzygies = compute_minimal_generating_set(reindexed_syzygies);
-    
+
     std::vector<grade_t> row_grades;
     for(auto& column : filtered_gb_columnsH) {
         row_grades.push_back(column.grade);
     }
-    
+
     return std::pair<Matrix, std::vector<grade_t>>(reindexed_syzygies, row_grades);
 }
 
 std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& image_columns, Matrix& columns, bool debug=true){
     /*
      Optimized for 3-parameter modules. Uses the fact the module has projective dimension 3 => syzygies of Z are free. A consequence is that a syzygy is either immideately reduced to zero or never reduced to zero within each 2-dim slice.
-     
+
      The main function computing a minimal presentation of the homology of the chain complex
-     
+
                                     C ->^F A ->^G B
-     
+
      where the columns of F are given by 'image_columns' and the columns of G by 'columns'.
-     
+
      Arguments:
      image_columns {std::vector<SignatureColumn>} -- a minimal generating set of the image map.
      columns {std::vector<SignatureColumn>} -- columns describing the matrix of a map between two free multigraded modules.
-     
+
      Returns:
      Matrix -- the minimal presentation matrix.
      hash_map<size_t, grade_t> -- a map of the row grades.
      */
-    
+
     std::cout << "Starting to presentation degree by degree..."  << std::endl;
-    
+
     /* Sort columns colexicographically */
     for(size_t i=0; i<columns.size(); i++){
         columns[i].signature_index = i;
@@ -2600,7 +2589,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
     for(size_t j=0; j<columns.size(); j++){
         kernel_reorder_map[columns[j].signature_index] = j;
     }
-    
+
     // Reindex image columns
     for(size_t i=0; i<image_columns.size(); i++) {
         SignatureColumn image_copy(image_columns[i]);
@@ -2623,25 +2612,25 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         columns[i].syzygy.push(column_entry_t(1, i));
         index_map_high[columns[i].grade[columns[i].grade.size()-1]] = i;
     }
-    
+
     /* Compute index set iterator */
     std::priority_queue<grade_t, std::vector<grade_t>, std::greater<grade_t>> grades;
     std::vector<std::vector<grade_t>> grade_lists;
     std::vector<std::vector<grade_t>> grade_listsH;
-    
+
     /* Vectors to store the columns of the GBs */
     Matrix gb_columns, gb_columnsH, syzygiesH;
-    
-    
+
+
     /* Index maps to keep track of signatures */
     std::vector<std::vector<signature_t>> GB, GBH;
     std::vector<std::vector<signature_t>> Syz, SyzH;
-    
+
     for(size_t i=0; i<columns.size(); i++){
         GB.push_back(std::vector<signature_t>());
         Syz.push_back(std::vector<signature_t>());
     }
-    
+
     /* Main algorithm that iterates through the index set */
     int column_index;
     index_t max_pivot=0;
@@ -2661,34 +2650,34 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         grades.push(column.grade);
     }
     index_t pivot;
-    
+
     std::vector<index_t> pivot_map(max_pivot+1, -1);
     std::vector<index_t> pivot_mapH(columns.size(), -1);
-    
+
     std::vector<size_t> grade_hashes;
     grade_hashes.reserve(columns.size());
     GradeHasher grade_hasher;
     for(auto& c : columns){
         grade_hashes.push_back(grade_hasher(c.grade));
     }
-    
+
     std::vector<size_t> L_F;
     std::vector<signature_t> reorder_Z_map;
-    
+
     std::set<size_t> syz_pivots;
-    
+
     size_t image_index=0;
-    
+
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
         while(v == grades.top()){
             grades.pop();
         }
-    
+
         iter_index++;
         size_t grade_hash = grade_hasher(v);
-        
+
         // B^h_z
         for( auto& signature : reorder_Z_map ){
             size_t i = signature.get_index();
@@ -2711,7 +2700,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                     }
                 }*/
             }
-            
+
             /*if(!in_syz){
                 size_t gb_size = GBH[i].size();
                 for(size_t j=gb_size-1; j < gb_size; j--){
@@ -2721,8 +2710,8 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                     }
                 }
             }*/
-            
-            
+
+
             if(column_index > -1){
                 pivot = gb_columnsH[column_index].get_pivot_index();
                 if(pivot > -1 && pivot_mapH[pivot] > -1 && gb_columnsH[pivot_mapH[pivot]].last_updated == iter_index){
@@ -2787,7 +2776,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                 }
             }
         }
-        
+
         /* Reduce image columns */
         while(image_index < image_columns.size() && image_columns[image_index].grade == v){
             SignatureColumn working_column(image_columns[image_index]);
@@ -2799,7 +2788,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
             }
             working_column.syzygy.refresh();
             if(pivot != -1){
-                //throw "Found non-reduced image column";
                 working_column.refresh();
                 working_column.signature_index = GBH.size();
                 L_F.push_back(GBH.size()); // The set keeping track of which kernel columns to remove.
@@ -2837,7 +2825,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
             }
             image_index++;
         }
-        
+
         /* Reduce columns of map G */
         size_t& index_bound = index_map_high[v[v.size()-1]];
         for( size_t i=0; i<=index_bound; i++ ){
@@ -3009,7 +2997,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
                                     grade_listsH[i].push_back(working_column.grade);
                                 }
                             }
-                        
+
                         }
                     }
                 }
@@ -3017,7 +3005,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         }
     }
     std::cout << "Nonminimal presentation of size "<< syzygiesH.size() << std::endl;
-    
+
     Matrix filtered_gb_columnsH;
     size_t j = 0;
     for(size_t i=0; i<GBH.size(); i++){
@@ -3027,17 +3015,17 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
             filtered_gb_columnsH.push_back(gb_columnsH[GBH[i][0].get_index()]);
         }
     }
-    
+
     sort(filtered_gb_columnsH.begin(), filtered_gb_columnsH.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade.lt_colex(rhs.grade);
          });
-    
+
     hash_map<size_t, size_t> signature_map;
     for(size_t j=0; j<filtered_gb_columnsH.size(); j++){
         signature_map[filtered_gb_columnsH[j].signature_index] = j;
     }
-    
+
     // Reindex syzygiesH
     Matrix reindexed_syzygies;
     for(size_t i=0; i<syzygiesH.size(); i++) {
@@ -3049,14 +3037,14 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         }
         reindexed_syzygies.push_back(working_column);
     }
-    
+
     reindexed_syzygies = compute_minimal_generating_set(reindexed_syzygies);
-    
+
     std::vector<grade_t> row_grades;
     for(auto& column : filtered_gb_columnsH) {
         row_grades.push_back(column.grade);
     }
-    
+
 //get_mem_usage(virt_memory, res_memory);
     return std::pair<Matrix, std::vector<grade_t>>(reindexed_syzygies, row_grades);
 }
@@ -3064,19 +3052,19 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
 std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& image_generators, Matrix& generating_set_kernel){
     /** Computes a minimal presentation of the ith homology module using generators of the kernel and image of
      the boundary matrices \Delta_{i-1} and \Delta_i respectively.
-     
+
      Arguments:
      image_generators {Matrix} -- a generating set of the image of the boundary map \Delta_i.
      kernel_generators {Matrix} -- a Groebner basis of the kernel of the boundary matrix \Delta_{i-1}.
-     
+
      Returns:
      Matrix -- a matrix describing a minimal presentation of the ith homology module.
-     
+
      */
-    
+
     std::cout << "Starting to compute presentation...";
     Matrix generating_set_image = compute_minimal_generating_set(image_generators);
-    
+
     //Sort image and kernel gens in colex and lex respectively
    sort(generating_set_kernel.begin(), generating_set_kernel.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -3086,7 +3074,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
          {
              return lhs.grade < rhs.grade ;
          });
-    
+
     generating_set_kernel.print();
     hash_map<size_t, grade_t> row_grade_map;
     for(size_t j=0; j<generating_set_kernel.size(); j++){
@@ -3097,9 +3085,9 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
         generating_set_kernel[i].syzygy = SyzColumn();
         generating_set_kernel[i].syzygy.push(column_entry_t(1, i));
     }
-    
+
     std::cout << "Expressing the image columns in terms of the kernel...";
-    
+
     hash_map<size_t, size_t> index_map_low, index_map_high;
     for(size_t i=0; i<generating_set_kernel.size(); i++){
         generating_set_kernel[i].signature_index = i;
@@ -3108,8 +3096,8 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
             index_map_low[generating_set_kernel[i].grade.back()] = i;
         }
     }
-    
-    
+
+
     /* Main algorithm that iterates through the index set */
     index_t max_pivot=0;
     for(auto& generator : generating_set_kernel){
@@ -3123,7 +3111,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
     presentation_matrix.reserve(generating_set_image.size());
     for(auto& column : generating_set_image){
         grade_t& v = column.grade;
-        
+
         /* Initialize Macaulay matrix */
         for( size_t i=0; i<=index_map_high[v.back()]; i++ ){
             if(generating_set_kernel[i].size()>0 && generating_set_kernel[i].grade[0] <= v[0]){
@@ -3146,8 +3134,8 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
                 }
             }
         }
-        
-        
+
+
         // Reduce the image column with the pivot set.
         column.syzygy = SyzColumn();
         while(true){
@@ -3165,28 +3153,28 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
         presentation_matrix.push_back(SignatureColumn(column.grade, column.signature_index, column.syzygy));
         presentation_matrix.back().refresh();
     }
-    
-    
+
+
     presentation_matrix.print();
     for(auto& column : presentation_matrix){
         column.grade.print();
     }
-    
+
     hash_map<size_t, size_t> pairs = compute_local_pairs(presentation_matrix, row_grade_map);
-    
+
     std::set<size_t> negative_columns;
     presentation_matrix = compute_global_columns(presentation_matrix, pairs, negative_columns);
-    
+
     for(auto& entry : pairs){
         if(row_grade_map.find(entry.first) != row_grade_map.end()){
             row_grade_map.erase(entry.first);
         }
     }
-    
-    
-    
+
+
+
     // Reindex the rows of the presentation matrix to account for deleted rows
-    
+
     std::vector<index_t> rows;
     for(auto& entry : row_grade_map){
         rows.push_back(entry.first);
@@ -3196,7 +3184,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
     for(size_t i=0; i<rows.size(); i++){
         row_index_map[rows[i]] = i;
     }
-    
+
     Matrix minimized_presentation;
     for(size_t i=0;i<presentation_matrix.size(); i++){
         SignatureColumn column(presentation_matrix[i].grade, presentation_matrix[i].signature_index);
@@ -3207,28 +3195,28 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
         }
         minimized_presentation.push_back(column);
     }
-    
+
     std::cout << "Finished computing presentation of size "<< minimized_presentation.size();
     return std::pair<Matrix, hash_map<size_t, grade_t>>(minimized_presentation, row_grade_map);
 }
 
 std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matrix& image_generators, Matrix& kernel_generators, bool debug=false){
     /** Input a minimal set of generators for the image and a Groebner basis for the kernel.
-     
+
      */
     std::cout << "Starting to compute presentation using Schreyer's algorithm"<< std::endl;
-    
+
     sort(kernel_generators.begin(), kernel_generators.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade < rhs.grade ;
          });
-    
+
     for(size_t i=0; i<kernel_generators.size(); i++){
         kernel_generators[i].signature_index = i;
         kernel_generators[i].syzygy = SyzColumn();
         kernel_generators[i].syzygy.push(column_entry_t(1, i));
     }
-    
+
     /* Translate image matrix */
     hash_map<index_t, std::vector<size_t>> pivots_indices;
     pivots_indices.reserve(kernel_generators.size());
@@ -3238,7 +3226,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
         }
         pivots_indices[column.get_pivot_index()].push_back(column.signature_index);
     }
-    
+
     Matrix translated_image_columns;
     for(auto& column : image_generators){
         SignatureColumn working_column(column);
@@ -3262,19 +3250,19 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
         }
         translated_image_columns.push_back(SignatureColumn(working_column.grade, working_column.signature_index, working_column.syzygy));
     }
-    
+
     Matrix syzygy_module = compute_syzygy_module(kernel_generators);
     std::cout << "Computed Syzygy module of size: "<< syzygy_module.size()<< std::endl;
     for(auto& column : translated_image_columns){
         syzygy_module.push_back(column);
     }
-    
+
     std::pair<Matrix, Matrix> m_pair = compute_minimal_generating_set2(kernel_generators);
     Matrix& generating_set_kernel = m_pair.first;
     Matrix& change_of_basis_map = m_pair.second;
-    
+
     std::cout << "Minimal generating set for kernel of size: "<< generating_set_kernel.size()<< std::endl;
-    
+
     hash_map<size_t, grade_t> row_grade_map;
     for(size_t j=0; j<generating_set_kernel.size(); j++){
         row_grade_map[j] = generating_set_kernel[j].grade;
@@ -3316,24 +3304,24 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
     }
 
     std::cout << "Computed non-minimal presentation of size: " << presentation.size()<< std::endl;
-    
+
     // Compute minimal generating set from syz-module and image columns
     sort(presentation.begin(), presentation.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
              return lhs.grade < rhs.grade ;
          });
-    
+
     hash_map<size_t, size_t> pairs = compute_local_pairs(presentation, row_grade_map);
-    
+
     std::set<size_t> negative_columns;
     presentation = compute_global_columns(presentation, pairs, negative_columns);
-    
+
     for(auto& entry : pairs){
         if(row_grade_map.find(entry.first) != row_grade_map.end()){
             row_grade_map.erase(entry.first);
         }
     }
-    
+
     std::vector<index_t> rows;
     for(auto& entry : row_grade_map){
         rows.push_back(entry.first);
@@ -3343,7 +3331,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
     for(size_t i=0; i<rows.size(); i++){
         row_index_map[rows[i]] = i;
     }
-    
+
     for(size_t i=0;i<presentation.size(); i++){
         SignatureColumn column(presentation[i].grade, presentation[i].signature_index);
         for(auto& entry : presentation[i]){
@@ -3361,7 +3349,7 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
 
 Landscape compute_landscape_naive_rank(Matrix presentation, std::vector<grade_t> row_grades, grade_t v_max, int lanscape_dim) {
     Landscape lanscape;
-    
+
     std::vector<std::vector<index_t>> base_set;
     for(size_t i=0; i<v_max.size(); i++){
         std::vector<index_t> row;
@@ -3370,19 +3358,19 @@ Landscape compute_landscape_naive_rank(Matrix presentation, std::vector<grade_t>
         }
         base_set.push_back(row);
     }
-    
+
     index_t max_pivot=0;
     for(auto& column : presentation){
         if(max_pivot < column.get_pivot().get_index()){
             max_pivot = column.get_pivot().get_index();
         }
     }
-    
+
     Iterator_lex grade_iterator = Iterator_lex(base_set);
-    
+
     grade_t vv;
     vv.push_back(4);vv.push_back(4);vv.push_back(7);
-    
+
     while(grade_iterator.has_next()){
         grade_t v = grade_iterator.next();
         size_t max_rank_index = 0;
@@ -3430,7 +3418,7 @@ Landscape compute_landscape_naive_rank(Matrix presentation, std::vector<grade_t>
 
 Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_grades, grade_t v_max, int lanscape_dim) {
     Landscape lanscape;
-    
+
     std::vector<std::vector<index_t>> base_set;
     for(size_t i=0; i<v_max.size(); i++){
         std::vector<index_t> row;
@@ -3439,18 +3427,18 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
         }
         base_set.push_back(row);
     }
-    
+
     index_t max_pivot=0;
     for(auto& column : presentation){
         if(max_pivot < column.get_pivot().get_index()){
             max_pivot = column.get_pivot().get_index();
         }
     }
-    
+
     Iterator_lex grade_iterator = Iterator_lex(base_set);
-    
+
     std::unordered_map<grade_t, std::pair<Matrix, Matrix>, GradeHasher> H_basis_map;
-    
+
     while(grade_iterator.has_next()){
         grade_t v = grade_iterator.next();
         size_t max_rank_index = 0;
@@ -3458,11 +3446,11 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
             // Calculate rank of map from v-i to v+i
             grade_t w(v);
             w[w.size()-1] += k;
-            
+
             if ( H_basis_map.find(w) == H_basis_map.end() ) {
                 index_t pivot;
                 std::vector<index_t> pivot_map(max_pivot+1, -1);
-                
+
                 Matrix reduced_basis;
                 for( size_t i=0; i<presentation.size(); i++ ){
                     if ( presentation[i].grade.leq_poset(w) ) {
@@ -3503,11 +3491,11 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                         pivot_index++;
                     }
                 }
-                
+
                 if ( pivot_index != reduced_basis.size() ) {
                     throw std::runtime_error("not basis");
                 }
-                
+
                 // Reindex reduced_basis
                 Matrix H_basis;
                 Matrix reindexed_reduced_basis;
@@ -3523,7 +3511,7 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                         H_basis.push_back(working_column);
                     }
                 }
-                
+
                 Matrix reordered_basis;
                 for(size_t i=reindexed_reduced_basis.size()-H_basis.size(); i<reindexed_reduced_basis.size(); i++) {
                     reordered_basis.push_back(reindexed_reduced_basis[i]);
@@ -3532,20 +3520,9 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                     reordered_basis.push_back(reindexed_reduced_basis[i]);
                 }
                 Matrix reduced_basis_inverse = inverse(reordered_basis);
-                
-                /*Matrix I = matmul(reordered_basis, reduced_basis_inverse);
-                
-                for ( size_t i=0; i<I.size(); i++ ) {
-                    while(!I[i].empty()) {
-                        column_entry_t p = I[i].pop_pivot();
-                        if ( p.get_index() != i ) {
-                            throw std::runtime_error("Non-identity matrix");
-                        }
-                    }
-                }*/
-                
+
                 Matrix H_basis_inv = mat_v_cut(reduced_basis_inverse, H_basis.size());
-                
+
                 H_basis_map[w] = std::pair<Matrix, Matrix>(H_basis, H_basis_inv);
             }
             grade_t z(v);
@@ -3565,12 +3542,12 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                     working_column.push(column_entry_t(1, basis_order_map[column.signature_index]));
                     A.push_back(working_column);
                 }
-                
-                
+
+
                 Matrix inter = matmul(A, H_basis);
                 Matrix B = matmul(H_basis_inv, inter);
                 std::vector<index_t> pivot_map(row_grades.size()+1, -1);
-                
+
                 for( size_t i=0; i<B.size(); i++ ){
                     index_t pivot = B[i].get_pivot().get_index();
                     while(pivot != -1 && pivot_map[pivot] > -1){
@@ -3581,7 +3558,7 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
                         pivot_map[pivot] = i;
                     }
                 }
-                
+
                 size_t rank = 0;
                 for(size_t i=0; i<row_grades.size(); i++) {
                     if ( pivot_map[i] != -1 ) {
@@ -3602,7 +3579,7 @@ Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_gr
 
 Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> row_grades, grade_t v_max, int lanscape_dim) {
     Landscape lanscape;
-    
+
     std::vector<std::vector<index_t>> base_set;
     for(size_t i=0; i<v_max.size(); i++){
         std::vector<index_t> row;
@@ -3611,18 +3588,18 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
         }
         base_set.push_back(row);
     }
-    
+
     index_t max_pivot=0;
     for(auto& column : presentation){
         if(max_pivot < column.get_pivot().get_index()){
             max_pivot = column.get_pivot().get_index();
         }
     }
-    
+
     Iterator_lex grade_iterator = Iterator_lex(base_set);
-    
+
     std::unordered_map<grade_t, std::pair<Matrix, Matrix>, GradeHasher> H_basis_map;
-    
+
     while(grade_iterator.has_next()){
         grade_t v = grade_iterator.next();
         size_t vr_max = 0;
@@ -3639,7 +3616,7 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
             if ( H_basis_map.find(w) == H_basis_map.end() ) {
                 index_t pivot;
                 std::vector<index_t> pivot_map(max_pivot+1, -1);
-                
+
                 Matrix reduced_basis;
                 for( size_t i=0; i<presentation.size(); i++ ){
                     if ( presentation[i].grade.leq_poset(w) ) {
@@ -3680,11 +3657,11 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                         pivot_index++;
                     }
                 }
-                
+
                 if ( pivot_index != reduced_basis.size() ) {
                     throw std::runtime_error("not basis");
                 }
-                
+
                 // Reindex reduced_basis
                 Matrix H_basis;
                 Matrix reindexed_reduced_basis;
@@ -3700,7 +3677,7 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                         H_basis.push_back(working_column);
                     }
                 }
-                
+
                 Matrix reordered_basis;
                 for(size_t i=reindexed_reduced_basis.size()-H_basis.size(); i<reindexed_reduced_basis.size(); i++) {
                     reordered_basis.push_back(reindexed_reduced_basis[i]);
@@ -3709,9 +3686,9 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                     reordered_basis.push_back(reindexed_reduced_basis[i]);
                 }
                 Matrix reduced_basis_inverse = inverse(reordered_basis);
-                
+
                 Matrix I = matmul(reordered_basis, reduced_basis_inverse);
-                
+
                 for ( size_t i=0; i<I.size(); i++ ) {
                     while(!I[i].empty()) {
                         column_entry_t p = I[i].pop_pivot();
@@ -3720,13 +3697,13 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                         }
                     }
                 }
-                
+
                 Matrix H_basis_inv = mat_v_cut(reduced_basis_inverse, H_basis.size());
-                
+
                 H_basis_map[w] = std::pair<Matrix, Matrix>(H_basis, H_basis_inv);
             }
-            
-            
+
+
             grade_t z(v);
             for (size_t i=0; i<z.size(); i++) {
                 z[i] = v[i]-k;
@@ -3741,13 +3718,13 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                     basis_order_map[H_basis_map[w].first[i].signature_index] = i;
                 }
                 Matrix A;
-                
+
                 for (auto& column : H_basis) {
                     SignatureColumn working_column(column.grade, A.size());
                     working_column.push(column_entry_t(1, basis_order_map[column.signature_index]));
                     A.push_back(working_column);
                 }
-                    
+
                /*     size_t pivot_index = 0;
                 for (size_t i=0; i<row_grades.size(); i++) {
                     if ( row_grades[i].leq_poset(w) ) {
@@ -3759,11 +3736,11 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                         pivot_index++;
                     }
                 }*/
-                
+
                 Matrix inter = matmul(A, H_basis);
                 Matrix B = matmul(H_basis_inv, inter);
                 std::vector<index_t> pivot_map(row_grades.size()+1, -1);
-                
+
                 for( size_t i=0; i<B.size(); i++ ){
                     index_t pivot = B[i].get_pivot().get_index();
                     while(pivot != -1 && pivot_map[pivot] > -1){
@@ -3774,7 +3751,7 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
                         pivot_map[pivot] = i;
                     }
                 }
-                
+
                 size_t rank = 0;
                 for(size_t i=0; i<row_grades.size(); i++) {
                     if ( pivot_map[i] != -1 ) {
@@ -3796,16 +3773,16 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
 
 Landscape compute_landscape_peaks(MultigradedBasis ker_basis, MultigradedBasis p_basis) {
     Landscape lanscape;
-    
-    
+
+
     return lanscape;
 }
 
 Landscape compute_landscape_naive(MultigradedBasis ker_basis, MultigradedBasis p_basis, grade_t v_max) {
     Landscape lanscape;
-    
+
     size_t v_r = v_max[v_max.size()-1];
-    
+
     std::vector<std::vector<index_t>> base_set;
     for(size_t i=0; i<v_max.size()-1; i++){
         std::vector<index_t> row;
@@ -3814,16 +3791,16 @@ Landscape compute_landscape_naive(MultigradedBasis ker_basis, MultigradedBasis p
         }
         base_set.push_back(row);
     }
-        
+
     Iterator_lex grade_iterator = Iterator_lex(base_set);
-    
+
     while(grade_iterator.has_next()){
         grade_t v = grade_iterator.next();
         for ( size_t i=0; i<v_r; i++ ) {
-            
+
         }
     }
-    
+
     return lanscape;
 }
 
@@ -3926,7 +3903,7 @@ GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std:
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
-    
+
     std::cout << "Time elapsed: " << duration.count() << " seconds" << std::endl;
     GradedMatrix graded_matrix = translateOutputMatrix(presentation_output.first);
     for(std::pair<size_t, grade_t> entry : presentation_output.second){
@@ -4027,12 +4004,12 @@ PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std:
     Matrix high_matrix; Matrix low_matrix;
     std::vector<std::vector<input_t>> index_value_lists;
     std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
-    
+
     std::pair<Matrix, hash_map<size_t, grade_t>> presentation;
     std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
-    
+
     CompressedLandscape compressed_landscape = computeCompressedLandscape(minimal_presentation.first, minimal_presentation.second);
-    
+
     PythonCompressedLandscape python_compressed_landscape;
     for ( auto& slice : compressed_landscape ) {
         std::pair<std::vector<int>, std::vector<std::vector<int>>> translated_slice;
@@ -4052,7 +4029,7 @@ PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vec
     Matrix high_matrix; Matrix low_matrix;
     std::vector<std::vector<input_t>> index_value_lists;
     std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
-    
+
     grade_t v_max = low_matrix[0].grade;
     for ( auto& column : low_matrix ) {
         v_max = column.grade.join(v_max);
@@ -4060,12 +4037,12 @@ PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vec
     for ( auto& column : high_matrix ) {
         v_max = column.grade.join(v_max);
     }
-    
+
     std::pair<Matrix, hash_map<size_t, grade_t>> presentation;
     std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
-    
+
     Landscape landscape = computeLandscapeNaive(minimal_presentation.first, minimal_presentation.second, v_max, landscape_dim);
-    
+
     PythonLandscape python_landscape;
     for ( auto& slice : landscape ) {
         std::vector<int> g = translate_grade(slice.first);
@@ -4124,14 +4101,14 @@ void print_usage_and_exit(int exit_code) {
 
 int main(int argc, char** argv) {
     const char* filename = nullptr;
-    
+
     int dim_max = 1;
     bool firep = false;
-    
+
     if(argc==1){
         print_usage_and_exit(0);
     }
-    
+
     for (index_t i = 1; i < argc; ++i) {
         const std::string arg(argv[i]);
         if (arg == "--help") {
@@ -4148,7 +4125,7 @@ int main(int argc, char** argv) {
             filename = argv[i];
         }
     }
-    
+
     std::pair<Matrix, std::vector<grade_t>> presentation;
     if(firep){
         Matrix high_matrix, low_matrix;
@@ -4165,9 +4142,9 @@ int main(int argc, char** argv) {
             std::cerr << "couldn't open file " << filename << std::endl;
             exit(-1);
         }
-        
+
         // TODO: how should choice of metrics and filters be specified in input?
-        
+
         std::vector<Metric*> metrics;
         metrics.push_back(new SquaredEuclideanMetric());
         std::vector<Filter*> filters;
@@ -4188,8 +4165,7 @@ int main(int argc, char** argv) {
         }
         presentation = computeMinimalPresentation_3p(boundary_matrices.first, boundary_matrices.second);
     }
-     
-    
+
+
     exit(0);
 }
-

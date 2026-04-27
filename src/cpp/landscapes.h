@@ -15,13 +15,13 @@ typedef std::vector<std::pair<grade_t, size_t>> Landscape;
 class CompressedLandscape : public std::vector<std::pair<grade_t, std::vector<grade_t>>>{
 private:
 public:
-   
+
     CompressedLandscape() : std::vector<std::pair<grade_t, std::vector<grade_t>>>() { }
 
     void optimize();
-    
+
     void sort_colex();
-    
+
     size_t operator()(grade_t& grade, size_t k);
 };
 
@@ -96,13 +96,10 @@ inline size_t CompressedLandscape::operator()(grade_t& grade, size_t k)
             } else {
                 diffs.push_back(v_r-low_index);
             }
-            
+
         }
     }
     sort(diffs.begin(), diffs.end());
-    //if ( diffs.size() > 0 ) {
-    //    std::cout << std::endl;
-   // }
     return k < diffs.size() ? diffs[diffs.size()-1-k] : 0;
 }
 
@@ -111,11 +108,11 @@ inline size_t CompressedLandscape::operator()(grade_t& grade, size_t k)
 class DiagLandscape : public std::vector<std::pair<grade_t, std::vector<std::vector<grade_t>>>>{
 private:
 public:
-   
+
     DiagLandscape() : std::vector<std::pair<grade_t, std::vector<std::vector<grade_t>>>>() { }
 
     void sort_colex();
-    
+
     size_t operator()(grade_t& grade, size_t k);
 };
 
@@ -183,9 +180,6 @@ inline size_t DiagLandscape::operator()(grade_t& grade, size_t k)
         }
     }
     sort(diffs.begin(), diffs.end());
-    //if ( diffs.size() > 0 ) {
-    //    std::cout << std::endl;
-   // }
     return k < diffs.size() ? diffs[diffs.size()-k] : 0;
 }
 

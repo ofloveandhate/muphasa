@@ -269,7 +269,6 @@ std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vecto
     for (size_t i = 0; i < point_cloud.size(); i++) {
         std::vector<input_t> row;
         for (size_t j = 0; j <= i ; j++) {
-            // input_t val = ((int)(1*(*metric).eval(point_cloud[i], point_cloud[j])));
             input_t val = (((*metric).eval(point_cloud[i], point_cloud[j])));
             row.push_back(val);
         }
@@ -408,14 +407,7 @@ std::vector<Simplex<input_t>> calculate_birth_grades(std::vector<std::vector<std
                 bool inserted_already = (start_time < end_time) && ( (radius_map[start_time + 1][end_time] <= radius) ||  (radius_map[start_time][end_time-1] <= radius)) ;
 
 
-                // std::cout << "Processing grade" << start_time << end_time << radius << std::endl;
-
-                // if (inserted_already) {
-                //     std::cout << "INSERTED ALREADY" << std::endl;
-                // }
-
                 if ((!inserted_already) && (radius < max_metric_value)){
-                    // std::cout << "Inserting at grade" << start_time << end_time << radius << std::endl;
 
                     std::vector<input_t> grade;
                     grade.push_back(inverted_start_time);
