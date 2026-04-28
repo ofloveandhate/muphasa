@@ -29,13 +29,14 @@ ext_modules = [
             "src/cpp/grade.cpp",
             "src/cpp/IO.cpp",
             "src/cpp/matrix.cpp",
-            "src/cpp/utils.cpp"
+            "src/cpp/utils.cpp",
+            "src/cpp/presentation.cpp"
         ],
         include_dirs=[
             "src/python/mph",   # for .pxd files
             "src/cpp",      # for C++ headers
             numpy.get_include(),
-            os.environ.get("BOOST_INC_DIR", "/usr/local/include")
+            os.environ.get("BOOST_INC_DIR", "/opt/homebrew/include" if system == "Darwin" else "/usr/local/include")
         ],
         language="c++",
         extra_compile_args=extra_compile_args,
