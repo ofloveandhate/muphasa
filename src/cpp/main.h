@@ -49,9 +49,7 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns);
 hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, grade_t>& row_grades);
 Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positive_pairs, std::set<size_t>& negative_rows);
 Matrix compute_syzygy_module(Matrix groebner_basis);
-Matrix compute_minimal_generating_set(Matrix& generators);
 std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators);
-bool cmpID(const signature_t& lhs, const signature_t& rhs);
 std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image_columns, Matrix& columns, bool debug=true);
 
 
@@ -66,4 +64,3 @@ PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std:
 
 
 #endif // MPH_MAIN_INCLUDED
-

@@ -48,6 +48,7 @@ set(MPH_HEADERS
 	IO.h
 	landscapes.h
 	matrix.h
+	presentation.h
 	signatureColumn.h
 	utils.h
 	)
@@ -57,6 +58,7 @@ set(MPH_SOURCES
 	grade.cpp
 	IO.cpp
 	matrix.cpp
+	presentation.cpp
 	utils.cpp
 )
 
