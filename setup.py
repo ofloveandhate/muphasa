@@ -29,6 +29,7 @@ ext_modules = [
             "src/cpp/matrix.cpp",
             "src/cpp/utils.cpp",
             "src/cpp/presentation.cpp",
+            "src/cpp/groebner.cpp",
         ],
         include_dirs=[
             "src/python/mph",  # for .pxd files

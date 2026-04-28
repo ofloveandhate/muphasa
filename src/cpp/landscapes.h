@@ -9,7 +9,12 @@
 #ifndef landscapes_h
 #define landscapes_h
 
-typedef std::vector<std::pair<grade_t, std::vector<size_t>>> MultigradedBasis;
+#include <algorithm>
+#include <utility>
+#include <vector>
+
+#include "grade.h"
+
 typedef std::vector<std::pair<grade_t, size_t>> Landscape;
 
 class CompressedLandscape : public std::vector<std::pair<grade_t, std::vector<grade_t>>>{

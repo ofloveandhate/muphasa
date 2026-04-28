@@ -45,6 +45,7 @@ set(MPH_HEADERS
 	column.h
 	examples.h
 	grade.h
+	groebner.h
 	IO.h
 	landscapes.h
 	matrix.h
@@ -56,6 +57,7 @@ set(MPH_HEADERS
 set(MPH_SOURCES
 	main.cpp
 	grade.cpp
+	groebner.cpp
 	IO.cpp
 	matrix.cpp
 	presentation.cpp

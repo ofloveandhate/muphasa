@@ -7,7 +7,6 @@ int c_presentation(float* points, int N, int D, int hom_dim);
 
 #include "utils.h"
 #include "grade.h"
-#include "column.h"
 #include "signatureColumn.h"
 #include "matrix.h"
 #include "IO.h"
@@ -36,21 +35,8 @@ struct PythonCompressedLandscape{
 };
 
 
-std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& columns);
-std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<SignatureColumn>& columns);
-std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureColumn>& columns);
-Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns);
-Matrix ImageGB(std::vector<SignatureColumn>& columns);
-std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_gradeopt_min_sig_basis(std::vector<SignatureColumn>& columns, MultigradedBasis ker_basis);
 CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& presentation, std::vector<grade_t> row_grades);
 DiagLandscape computeSparseDiagLandscape(Matrix& presentation, std::vector<grade_t> row_grades);
-Matrix buchberger(Matrix& columns);
-Matrix computeKernel_2p(std::vector<SignatureColumn>& columns);
-hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, grade_t>& row_grades);
-Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positive_pairs, std::set<size_t>& negative_rows);
-Matrix compute_syzygy_module(Matrix groebner_basis);
-std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators);
-std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image_columns, Matrix& columns, bool debug=true);
 
 
 

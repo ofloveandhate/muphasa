@@ -334,6 +334,8 @@ struct GradeHasher
     }
 };
 
+typedef std::vector<std::pair<grade_t, std::vector<size_t>>> MultigradedBasis;
+
 #endif // MPH_GRADE_INCLUDED
 
 
