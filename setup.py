@@ -25,11 +25,14 @@ ext_modules = [
             "src/python/mph/pyMPH.pyx",
             "src/cpp/main.cpp",
             "src/cpp/grade.cpp",
-            "src/cpp/IO.cpp",
+            "src/cpp/rips.cpp",
             "src/cpp/matrix.cpp",
             "src/cpp/utils.cpp",
             "src/cpp/presentation.cpp",
             "src/cpp/groebner.cpp",
+            "src/cpp/landscapes.cpp",
+            "src/cpp/spatiotemporal.cpp",
+            "src/cpp/bindings.cpp",
         ],
         include_dirs=[
             "src/python/mph",  # for .pxd files

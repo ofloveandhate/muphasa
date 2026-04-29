@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "grade.h"
 #include "signatureColumn.h"
-#include "IO.h"
+#include "rips.h"
 
 grade_t get_unique_grade(int p, std::vector<hash_set<index_t>>& visited_grades){
     grade_t grade;

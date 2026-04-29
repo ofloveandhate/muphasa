@@ -4,7 +4,7 @@ from libcpp.vector cimport vector
 from libcpp.queue cimport priority_queue
 from libcpp.pair cimport pair
 
-cdef extern from "main.h":
+cdef extern from "bindings.h":
 	ctypedef struct GradedMatrix:
 		vector[vector[pair[int, int]]] matrix
 		vector[vector[int]] row_grades

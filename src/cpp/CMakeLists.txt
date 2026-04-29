@@ -42,25 +42,30 @@ add_definitions(-DMSGPACK_USE_BOOST)
 
 set(MPH_HEADERS
 	main.h
+	bindings.h
 	column.h
 	examples.h
 	grade.h
 	groebner.h
-	IO.h
+	rips.h
 	landscapes.h
 	matrix.h
 	presentation.h
 	signatureColumn.h
+	spatiotemporal.h
 	utils.h
 	)
 
 set(MPH_SOURCES
 	main.cpp
+	bindings.cpp
 	grade.cpp
 	groebner.cpp
-	IO.cpp
+	rips.cpp
+	landscapes.cpp
 	matrix.cpp
 	presentation.cpp
+	spatiotemporal.cpp
 	utils.cpp
 )
 

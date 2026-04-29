@@ -14,6 +14,8 @@
 #include <vector>
 
 #include "grade.h"
+#include "matrix.h"
+#include "signatureColumn.h"
 
 typedef std::vector<std::pair<grade_t, size_t>> Landscape;
 
@@ -187,6 +189,10 @@ inline size_t DiagLandscape::operator()(grade_t& grade, size_t k)
     sort(diffs.begin(), diffs.end());
     return k < diffs.size() ? diffs[diffs.size()-k] : 0;
 }
+
+
+CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& presentation, std::vector<grade_t> row_grades);
+Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_grades, grade_t v_max, int lanscape_dim);
 
 
 #endif /* landscapes_h */
