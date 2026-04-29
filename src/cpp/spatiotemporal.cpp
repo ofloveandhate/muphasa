@@ -72,64 +72,6 @@ std::vector<std::vector<std::vector<input_t>>> get_trajectory_dms(std::vector<st
 }
 
 
-
-std::vector<Simplex<input_t>> calculate_birth_grades2(std::vector<std::vector<std::vector<input_t>>> trajectory_dms, input_t& max_metric_value, std::vector<Simplex<input_t>>& simplices) {
-    std::vector<Simplex<input_t>> new_simplices;
-    for(size_t simplex_index=0; simplex_index<simplices.size(); simplex_index++){
-        input_t prev_value = 0;
-        for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
-            for (size_t j=0; j<i ; j++) {
-                prev_value = trajectory_dms[0][i][j] < prev_value ? prev_value : trajectory_dms[0][i][j];
-            }
-        }
-        input_t curr_value = 0;
-        for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
-            for (size_t j=0; j<i ; j++) {
-                curr_value = trajectory_dms[1][i][j] < curr_value ? curr_value : trajectory_dms[1][i][j];
-            }
-        }
-        if ( prev_value <= curr_value && prev_value < max_metric_value ) {
-            std::vector<input_t> grade;
-            grade.push_back(trajectory_dms.size()-1);
-            grade.push_back(0);
-            grade.push_back(prev_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
-        }
-
-        for (size_t time_simplex_index=2; time_simplex_index < trajectory_dms.size(); time_simplex_index++){
-            input_t next_value = 0;
-            for (size_t i=1; i< simplices[simplex_index].vertices.size(); i++) {
-                for (size_t j=0; j<i ; j++) {
-                    next_value = trajectory_dms[time_simplex_index][i][j] < next_value ? next_value : trajectory_dms[time_simplex_index][i][j];
-                }
-            }
-
-            if ( curr_value <= prev_value && curr_value <= next_value && curr_value < max_metric_value ) {
-                std::vector<input_t> grade;
-                grade.push_back(trajectory_dms.size()-time_simplex_index);
-                grade.push_back(time_simplex_index-1);
-                grade.push_back(curr_value);
-                new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
-            }
-
-            prev_value = curr_value;
-            curr_value = next_value;
-        }
-
-        if ( curr_value <= prev_value && curr_value < max_metric_value ) {
-            std::vector<input_t> grade;
-            grade.push_back(0);
-            grade.push_back(trajectory_dms.size()-1);
-            grade.push_back(curr_value);
-            new_simplices.push_back(Simplex<input_t>(std::vector<size_t>(simplices[simplex_index].vertices), std::vector<input_t>(grade), simplex_index));
-        }
-
-    }
-    return new_simplices;
-}
-
-
-
 input_t interlevel_rips_radius(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms, std::vector<size_t>& vertices, size_t start_time, size_t end_time) {
 
     input_t radius = 0.0;
@@ -225,7 +167,6 @@ std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>> compute_boundary_m
      hom_dim {int} -- the dimension of the homology to be computed
 
      */
-    std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
     // The discretisation map on the parameters
@@ -259,22 +200,5 @@ std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>> compute_boundary_m
         add_boundary_columns<input_t>(mid_simplices_extended, low_simplices, low_matrix, grade_map.first);
         index_value_lists = grade_map.second;
     }
-    std::cout << "Finished computing boundary matrices." << std::endl;
     return std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>(high_matrix, low_matrix, index_value_lists);
-}
-
-
-
-void write_trajectories_to_file(std::vector<std::vector<std::vector<input_t>>> trajectories, std::ofstream& output_stream) {
-
-    for ( auto& trajectory : trajectories ) {
-        for ( auto& point : trajectory ) {
-            for ( auto& coord : point ) {
-                output_stream << coord << ",";
-            }
-            output_stream << "\n";
-        }
-        output_stream << "::\n";
-    }
-
 }

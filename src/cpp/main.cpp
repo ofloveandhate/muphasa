@@ -19,39 +19,6 @@
 
 
 
-double res_memory=0;
-double virt_memory=0;
-
-
-
-/*
- Testing
- */
-
-std::vector<double> run_gb_singatures_pres(Matrix& input_matrix, Matrix& image, bool debug=false){
-    auto start = std::chrono::high_resolution_clock::now();
-    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(image, input_matrix, debug);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto b_time = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    std::cout << " Presentation size: " << minimal_presentation.first.size() << std::endl;//gbs2.size() << std::endl;
-    double time = b_time.count();
-    double size = minimal_presentation.first.size();
-    return std::vector<double>{time, res_memory, size};
-}
-
-std::vector<double> run_gb_shreyer_pres(Matrix& input_matrix, Matrix& image, bool debug=false){
-    auto start = std::chrono::high_resolution_clock::now();
-    Matrix kernel = computeGroebnerBases_gradeopt(input_matrix).second;
-    std::pair<Matrix, hash_map<size_t, grade_t>> presentation = compute_presentation_schreyer(image, kernel);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto b_time = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    std::cout << " Presentation size: " << presentation.first.size() << std::endl;//gbs2.size() << std::endl;
-    double time = b_time.count();
-    double size = presentation.first.size();
-    return std::vector<double>{time, res_memory, size};
-}
-
-
 /* Input */
 
 void print_usage_and_exit(int exit_code) {

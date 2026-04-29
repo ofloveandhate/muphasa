@@ -1,6 +1,5 @@
 #include "presentation.h"
 
-#include <iostream>
 #include <queue>
 #include <set>
 #include <algorithm>
@@ -17,7 +16,6 @@ hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, g
      hash_map<size_t, size_t> -- a map that sends a local positive row to a local negative column.
 
      */
-    std::cout << "Starting to compute local pairs...";
     hash_map<size_t, size_t> pairs;
     for(size_t column_index=0; column_index < columns.size(); column_index++){
         if(columns[column_index].local != 1 && columns[column_index].get_pivot().get_index() != -1 && row_grades[columns[column_index].get_pivot().get_index()] == columns[column_index].grade){
@@ -46,7 +44,6 @@ hash_map<size_t, size_t> compute_local_pairs(Matrix& columns, hash_map<size_t, g
             }
         }
     }
-    std::cout << "Finished computing local pairs.";
     return pairs;
 }
 
@@ -62,7 +59,6 @@ Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positiv
      Matrix -- a minimized presentation matrix.
 
      */
-    std::cout << "Starting to compute global columns...";
 
     Matrix global_columns;
     for(size_t index_column_to_reduce = 0; index_column_to_reduce<columns.size();index_column_to_reduce++) {
@@ -89,7 +85,6 @@ Matrix compute_global_columns(Matrix& columns, hash_map<size_t, size_t>& positiv
             global_columns.push_back(global_column);
         }
     }
-    std::cout << "Finished computing global columns of size: " << global_columns.size();
     return global_columns;
 }
 
@@ -107,7 +102,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
 
      */
 
-    std::cout << "Starting to compute presentation...";
     Matrix generating_set_image = compute_minimal_generating_set(image_generators);
 
     //Sort image and kernel gens in colex and lex respectively
@@ -120,18 +114,15 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
              return lhs.grade < rhs.grade ;
          });
 
-    generating_set_kernel.print();
     hash_map<size_t, grade_t> row_grade_map;
     for(size_t j=0; j<generating_set_kernel.size(); j++){
         row_grade_map[j] = grade_t(generating_set_kernel[j].grade);
-        row_grade_map[j].print();
     }
     for(size_t i=0; i<generating_set_kernel.size(); i++){
         generating_set_kernel[i].syzygy = SyzColumn();
         generating_set_kernel[i].syzygy.push(column_entry_t(1, i));
     }
 
-    std::cout << "Expressing the image columns in terms of the kernel...";
 
     hash_map<size_t, size_t> index_map_low, index_map_high;
     for(size_t i=0; i<generating_set_kernel.size(); i++){
@@ -187,7 +178,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
             pivot = column.get_pivot().get_index();
             if(pivot != -1){
                 if(pivot_map[pivot] == -1){
-                    std::cerr << "Cannot express image column in terms of kernel. Throwing exception...";
                     throw std::runtime_error("Failed to express image column in terms of kernel generating set.");
                 }
                 column.plus(generating_set_kernel[pivot_map[pivot]]);
@@ -199,11 +189,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
         presentation_matrix.back().refresh();
     }
 
-
-    presentation_matrix.print();
-    for(auto& column : presentation_matrix){
-        column.grade.print();
-    }
 
     hash_map<size_t, size_t> pairs = compute_local_pairs(presentation_matrix, row_grade_map);
 
@@ -241,7 +226,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_2p(Matrix& ima
         minimized_presentation.push_back(column);
     }
 
-    std::cout << "Finished computing presentation of size "<< minimized_presentation.size();
     return std::pair<Matrix, hash_map<size_t, grade_t>>(minimized_presentation, row_grade_map);
 }
 
@@ -266,7 +250,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
      hash_map<size_t, grade_t> -- a map of the row grades.
      */
 
-    std::cout << "Starting to presentation degree by degree..."  << std::endl;
 
     /* Sort columns colexicographically */
     for(size_t i=0; i<columns.size(); i++){
@@ -678,7 +661,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
             }
         }
     }
-    std::cout << "Nonminimal presentation of size "<< syzygiesH.size() << std::endl;
 
     Matrix filtered_gb_columnsH;
     size_t j = 0;
@@ -719,7 +701,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         row_grades.push_back(column.grade);
     }
 
-//get_mem_usage(virt_memory, res_memory);
     return std::pair<Matrix, std::vector<grade_t>>(reindexed_syzygies, row_grades);
 }
 
@@ -727,7 +708,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
     /** Input a minimal set of generators for the image and a Groebner basis for the kernel.
 
      */
-    std::cout << "Starting to compute presentation using Schreyer's algorithm"<< std::endl;
 
     sort(kernel_generators.begin(), kernel_generators.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {
@@ -775,7 +755,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
     }
 
     Matrix syzygy_module = compute_syzygy_module(kernel_generators);
-    std::cout << "Computed Syzygy module of size: "<< syzygy_module.size()<< std::endl;
     for(auto& column : translated_image_columns){
         syzygy_module.push_back(column);
     }
@@ -784,7 +763,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
     Matrix& generating_set_kernel = m_pair.first;
     Matrix& change_of_basis_map = m_pair.second;
 
-    std::cout << "Minimal generating set for kernel of size: "<< generating_set_kernel.size()<< std::endl;
 
     hash_map<size_t, grade_t> row_grade_map;
     for(size_t j=0; j<generating_set_kernel.size(); j++){
@@ -813,11 +791,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
                 pivot = copy.get_pivot().get_index();
             }
             if(ker_column.get_pivot().get_index() != -1){
-                copy.print();
-                std::cout << "\n";
-                column.print();
-                std::cout << "\n";
-                ker_column.print();
                 throw std::runtime_error("Column non-zero");
             }
         }
@@ -826,7 +799,6 @@ std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matri
         }
     }
 
-    std::cout << "Computed non-minimal presentation of size: " << presentation.size()<< std::endl;
 
     // Compute minimal generating set from syz-module and image columns
     sort(presentation.begin(), presentation.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -885,7 +857,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
      hash_map<size_t, grade_t> -- a map of the row grades.
      */
 
-    std::cout << "Starting to presentation degree by degree..."  << std::endl;
 
     /* Sort columns colexicographically */
     for(size_t i=0; i<columns.size(); i++){
@@ -1275,7 +1246,6 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
             }
         }
     }
-    std::cout << "Nonminimal presentation of size "<< syzygiesH.size() << std::endl;
 
     Matrix filtered_gb_columnsH;
     size_t j = 0;

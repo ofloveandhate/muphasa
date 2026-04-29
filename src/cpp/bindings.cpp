@@ -1,6 +1,5 @@
 #include "bindings.h"
 
-#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -80,7 +79,6 @@ std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int
 GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std::vector<std::vector<int>>& column_grades_h, std::vector<std::vector<int>>& low_matrix, std::vector<std::vector<int>>& column_grades_l){
     Matrix M_h = translateInputMatrix(high_matrix, column_grades_h);
     Matrix M_l = translateInputMatrix(low_matrix, column_grades_l);
-    auto start = std::chrono::high_resolution_clock::now();
     std::pair<Matrix, hash_map<size_t, grade_t>> presentation_output;
     if(M_l.size()>0 && M_l[0].grade.size()==2){
         Matrix kernel = computeKernel_2p(M_l);
@@ -88,10 +86,6 @@ GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std:
     }else{
         std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(M_h, M_l);
     }
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
-
-    std::cout << "Time elapsed: " << duration.count() << " seconds" << std::endl;
     GradedMatrix graded_matrix = translateOutputMatrix(presentation_output.first);
     for(std::pair<size_t, grade_t> entry : presentation_output.second){
         std::vector<int> row_grade;
@@ -178,34 +172,52 @@ GradedMatrix presentation(std::vector<std::vector<input_t>>& _points, std::vecto
     return graded_matrix;
 }
 
-std::vector<int> translate_grade(grade_t _grade) {
-    std::vector<int> grade;
-    for ( auto& e : _grade ) {
-        grade.push_back((int)e);
+
+std::vector<int> grade_indices_to_int_vector(const grade_t& grade) {
+    std::vector<int> out;
+    for ( auto& e : grade ) {
+        out.push_back((int)e);
     }
-    return grade;
+    return out;
 }
 
-PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim){
-    Metric* m = new SquaredEuclideanMetric();
-    Matrix high_matrix; Matrix low_matrix;
-    std::vector<std::vector<input_t>> index_value_lists;
-    std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, m, max_metric_value, hom_dim);
+std::pair<std::vector<int>, std::vector<std::vector<int>>> translate_compressed_slice(const std::pair<grade_t, std::vector<grade_t>>& slice) {
+    std::vector<std::vector<int>> syzygies;
+    for ( auto& s : slice.second ) {
+        syzygies.push_back(grade_indices_to_int_vector(s));
+    }
+    return {grade_indices_to_int_vector(slice.first), syzygies};
+}
 
-    std::pair<Matrix, hash_map<size_t, grade_t>> presentation;
+
+PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t max_metric_value, int hom_dim){
+    /* Computes the spatiotemporal compressed landscape for a time-varying point cloud.
+
+     trajectories {std::vector<std::vector<std::vector<input_t>>>} -- a time-varying point cloud of shape n_agents x n_timepoints x n_spatial_dim
+     max_metric_value {input_t} -- the maximum allowed metric value for inclusion in the Vietoris-Rips complex.
+     hom_dim {int} -- homology dimesion
+
+     Returns:
+     PythonCompressedLandscape -- a list of (birth, syzygies) pairs whose grade components are integer indices,
+     plus index_value_lists, the per-axis lookup table that maps those indices back to real filtration values.
+     */
+
+    // Build two boundary matrices C ->^F A ->^G B
+    SquaredEuclideanMetric metric;
+    Matrix high_matrix; Matrix low_matrix;
+    std::vector<std::vector<input_t>> index_value_lists; // translates integer critical values to underlying filtration values
+    std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, &metric, max_metric_value, hom_dim);
+
+    // Compute minimal presentation
     std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
 
+    // Convert to compressed landscape
     CompressedLandscape compressed_landscape = computeCompressedLandscape(minimal_presentation.first, minimal_presentation.second);
 
+    // Convert to Python-facing struct
     PythonCompressedLandscape python_compressed_landscape;
     for ( auto& slice : compressed_landscape ) {
-        std::pair<std::vector<int>, std::vector<std::vector<int>>> translated_slice;
-        std::vector<int> g = translate_grade(slice.first);
-        std::vector<std::vector<int>> f;
-        for ( auto& l : slice.second ) {
-            f.push_back(translate_grade(l));
-        }
-        python_compressed_landscape.pairings.push_back(std::pair<std::vector<int>, std::vector<std::vector<int>>>(g, f));
+        python_compressed_landscape.pairings.push_back(translate_compressed_slice(slice));
     }
     python_compressed_landscape.index_value_lists = index_value_lists;
     return python_compressed_landscape;
@@ -232,7 +244,7 @@ PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vec
 
     PythonLandscape python_landscape;
     for ( auto& slice : landscape ) {
-        std::vector<int> g = translate_grade(slice.first);
+        std::vector<int> g = grade_indices_to_int_vector(slice.first);
         int f = (int)slice.second;
         python_landscape.landscape.push_back(std::pair<std::vector<int>, int>(g, f));
     }

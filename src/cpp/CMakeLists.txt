@@ -44,7 +44,6 @@ set(MPH_HEADERS
 	main.h
 	bindings.h
 	column.h
-	examples.h
 	grade.h
 	groebner.h
 	rips.h

@@ -1,7 +1,6 @@
 #include "landscapes.h"
 
 #include <algorithm>
-#include <iostream>
 #include <queue>
 #include <unordered_set>
 
@@ -20,8 +19,6 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
      Returns:
      CompressedLandscape -- a compressed representation of a multiparameter persistence landscape.
      */
-
-    std::cout << "Starting to compute persistence landscape..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(presentation.begin(), presentation.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -225,7 +222,6 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
             }
         }
     }
-    std::cout << "Finished computing compressed landscape." << std::endl;
     landscape.sort_colex();
     return landscape;
 }
@@ -310,15 +306,9 @@ Landscape compute_landscape_naive_rank(Matrix presentation, std::vector<grade_t>
 
     Iterator_lex grade_iterator = Iterator_lex(base_set);
 
-    grade_t vv;
-    vv.push_back(4);vv.push_back(4);vv.push_back(7);
-
     while(grade_iterator.has_next()){
         grade_t v = grade_iterator.next();
         size_t max_rank_index = 0;
-        if ( v == vv ) {
-            std::cout << std::endl;
-        }
         for ( size_t k=0; k<=v[v.size()-1]; k++ ) {
             // Calculate rank of map from v-i to v+i
             index_t pivot;

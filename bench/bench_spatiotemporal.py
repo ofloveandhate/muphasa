@@ -13,7 +13,6 @@ Usage:
 """
 import argparse
 import json
-import os
 import resource
 import subprocess
 import sys
@@ -48,13 +47,6 @@ FIXTURES = {
 # ---------- worker: runs one fixture, prints JSON ----------
 
 def _worker(name):
-    # Silence the C++ progress prints that go to fd 1, but keep a copy of the
-    # original stdout so the result JSON still reaches the parent.
-    saved_stdout_fd = os.dup(1)
-    devnull_fd = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(devnull_fd, 1)
-    os.close(devnull_fd)
-
     import mph
     trajectories, max_metric_value, hom_dim = FIXTURES[name]()
     t0 = time.perf_counter()
@@ -64,13 +56,12 @@ def _worker(name):
     if sys.platform == "darwin":
         peak_kb //= 1024  # macOS reports bytes; Linux reports KB
 
-    payload = json.dumps({
+    print(json.dumps({
         "fixture": name,
         "time_s": elapsed,
         "peak_rss_kb": peak_kb,
         "n_pairings": len(res.pairings),
-    }) + "\n"
-    os.write(saved_stdout_fd, payload.encode())
+    }))
 
 
 # ---------- driver ----------

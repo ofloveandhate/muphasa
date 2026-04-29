@@ -1,7 +1,6 @@
 #include "groebner.h"
 
 #include <algorithm>
-#include <iostream>
 #include <queue>
 
 bool cmpID(const signature_t& lhs, const signature_t& rhs)
@@ -26,7 +25,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -154,7 +152,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases(std::vector<SignatureColumn>& col
             gb_columns_output.push_back(gb_columns[GB[i][j].get_index()]);
         }
     }
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return std::pair<Matrix, Matrix>(gb_columns_output, syzygies_output);
 }
 
@@ -170,7 +167,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -368,7 +364,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
             gb_columns_output.push_back(gb_columns[GB[i][j].get_index()]);
         }
     }
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return std::pair<Matrix, Matrix>(gb_columns_output, syzygies_output);
 }
 
@@ -384,7 +379,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -550,9 +544,6 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
         }
     }
 
-    // get_mem_usage(virt_memory, res_memory);
-
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return std::pair<Matrix, Matrix>(gb_columns, syzygies);
 }
 
@@ -568,7 +559,6 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -733,7 +723,6 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
             syzygies_output.push_back(SignatureColumn(Syz[i][j].get_grade(), syzygies_output.size(), syzygies[Syz[i][j].get_index()]));
         }
     }
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return syzygies_output;
 }
 
@@ -749,7 +738,6 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -911,7 +899,6 @@ Matrix ImageGB(std::vector<SignatureColumn>& columns){
             }
         }
     }
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return gb_columns;
 }
 
@@ -928,7 +915,6 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -1131,12 +1117,10 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
             gb_columns_output.push_back(gb_columns[GB[i][j].get_index()]);
         }
     }
-    std::cout << "Finished computing Groebner basis." << std::endl;
     return std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>>(gb_columns_output, sig_basis);
 }
 
 Matrix buchberger(Matrix& columns){
-    std::cout << "Computing GB for the image using Buchbergers algorithm." << std::endl;
     size_t max_pivot = 0;
     for(size_t i=0; i<columns.size(); i++){
         if(columns[i].get_pivot_index() > max_pivot){
@@ -1186,7 +1170,6 @@ Matrix buchberger(Matrix& columns){
         }
 
     }
-    std::cout << "Finished computing a GB of size: " << G.size() << std::endl;
     return G;
 }
 
@@ -1203,7 +1186,6 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
      std::vector<SignatureColumn> -- a list of vectors describing a minimal Groebner basis for the kernel of the map.
      */
 
-    std::cout << "Starting to compute Groebner bases..." << std::endl;
 
     /* Sort columns colexicographically */
     sort(columns.begin(), columns.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -1277,7 +1259,6 @@ Matrix computeKernel_2p(std::vector<SignatureColumn>& columns){
             syzygies_output.push_back(SignatureColumn(Syz[i][j].get_grade(), syzygies_output.size(), syzygies[Syz[i][j].get_index()]));
         }
     }
-    std::cout << "Finished computing Groebner bases." << std::endl;
     return syzygies_output;
 }
 
@@ -1293,7 +1274,6 @@ Matrix compute_minimal_generating_set(Matrix& generators){
      */
 
     /* Vectors to store the columns of the GBs */
-    std::cout << "Starting to compute minimal generating set for columns of size: " << generators.size() << std::endl;
 
     /* Sort columns colexicographically */
     sort(generators.begin(), generators.end(), [ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
@@ -1424,7 +1404,6 @@ Matrix compute_minimal_generating_set(Matrix& generators){
             minimal_generating_set.push_back(generators[column_index]);
         }
     }
-    //get_mem_usage(virt_memory, res_memory);
     return minimal_generating_set;
 }
 
@@ -1439,7 +1418,6 @@ std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators){
      */
 
     /* Vectors to store the columns of the GBs */
-    std::cout << "Starting to compute minimal generating set for columns of size: " << generators.size()  << std::endl;
 
     for(size_t i=0; i<generators.size(); i++){
         generators[i].signature_index = i;
@@ -1600,8 +1578,6 @@ std::pair<Matrix, Matrix> compute_minimal_generating_set2(Matrix generators){
          {
              return lhs.signature_index < rhs.signature_index;
          });
-    // get_mem_usage(virt_memory, res_memory);
-    std::cout << "Finished computing minimal generating set of size: " << minimal_generating_set.size();
     return std::pair<Matrix, Matrix>(minimal_generating_set, change_of_basis_map);
 }
 

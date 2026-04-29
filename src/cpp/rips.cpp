@@ -195,7 +195,6 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
      hom_dim {int} -- the dimension of the homology to be computed.
 
      */
-    std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
 
@@ -224,7 +223,6 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
         add_boundary_columns<input_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<input_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
-    std::cout << "Finished computing boundary matrices." << std::endl;
     return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
 }
 
@@ -256,7 +254,6 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
      hom_dim {int} -- the dimension of the homology to be computed.
 
      */
-    std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
 
@@ -279,7 +276,6 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
         add_boundary_columns<index_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<index_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
-    std::cout << "Finished computing boundary matrices." << std::endl;
     return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
 }
 
@@ -293,7 +289,6 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<s
      hom_dim {int} -- the dimension of the homology to be computed.
 
      */
-    std::cout << "Starting to compute boundary matrices..." << std::endl;
     Matrix high_matrix;
     Matrix low_matrix;
 
@@ -322,14 +317,12 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<s
         add_boundary_columns<input_t>(high_simplices, mid_simplices, high_matrix, grade_map);
         add_boundary_columns<input_t>(mid_simplices, low_simplices, low_matrix, grade_map);
     }
-    std::cout << "Finished computing boundary matrices." << std::endl;
     return std::pair<Matrix, Matrix>(high_matrix, low_matrix);
 }
 
 
 
 void verify_kernel(Matrix& kernel, Matrix& map){
-    std::cout << "Starting to verify kernel of map...";
     for(size_t i=0; i<kernel.size(); i++){
         SignatureColumn working_column(kernel[i].grade, i, kernel[i]);
         SignatureColumn result(kernel[i].grade, i);
@@ -343,12 +336,9 @@ void verify_kernel(Matrix& kernel, Matrix& map){
         }
         index_t pivot = result.get_pivot().get_index();
         if(pivot!=-1){
-            std::cerr << "Column is not in kernel of map";
             throw std::runtime_error("Kernel verification failed.");
         }
     }
-    std::cout << "Finished verifying kernel of map.";
-    std::cout << "Success.";
 }
 
 
@@ -365,7 +355,6 @@ std::vector<std::vector<input_t>> read_point_cloud(std::istream& input_stream, i
      Returns:
             std::vector<std::vector<input_t>> -- a list of points represented as vectors with entries of type 'input_t'.
      **/
-    std::cout << "Starting to read point cloud...";
     std::vector<std::vector<input_t>> points;
     std::string line;
     input_t value;
@@ -380,7 +369,6 @@ std::vector<std::vector<input_t>> read_point_cloud(std::istream& input_stream, i
             points.push_back(point);
         }
     }
-    std::cout << "Finished reading points: " << points.size();
     return points;
 }
 

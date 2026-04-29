@@ -80,9 +80,6 @@ inline bool grade_t::lt_poset(grade_t& other_grade)
 inline bool grade_t::lt_colex(const grade_t& other_grade) const
 {
 /* Colexicographical order */
-    if(this->size()!=other_grade.size()){
-        std::cout<<"error";
-    }
     assert(this->size()==other_grade.size());
     size_t i=other_grade.size()-1;
     while (i>0 && other_grade[i]==this->at(i)){

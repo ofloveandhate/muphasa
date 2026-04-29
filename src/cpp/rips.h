@@ -178,19 +178,10 @@ template <typename T> void add_boundary_columns(std::vector<Simplex<T>>& high_si
         for(size_t vertex_index = 0; vertex_index < high_simplices[simplex_index].vertices.size() ; vertex_index++){
 
             VertexContainer vertices;
-            std::vector<size_t> high_vertices; 
-
             for(size_t k=0; k < high_simplices[simplex_index].vertices.size(); k++){
                 if(k!=vertex_index){
                     vertices.push_back(high_simplices[simplex_index].vertices[k]);
-                    high_vertices.push_back(high_simplices[simplex_index].vertices[k]);
                 }
-            }
-            std::vector<size_t> low_vertices = low_simplices[map[vertices]].vertices;
-            sort(high_vertices.begin(), high_vertices.end());
-            sort(low_vertices.begin(), low_vertices.end());
-            if( low_vertices != high_vertices){
-                std::cout << "Finished computing boundary matrices. add_boundary_columns" << std::endl;
             }
             column.push(column_entry_t(coeff, map[vertices]));
             //coeff *= -1; //TODO: handle more types of coefficients than F_2.
@@ -493,7 +484,5 @@ template <typename SignatureColumn, typename Column> void read_input_file(std::i
 }
 
 void apply_diagonal_grade_transform(Matrix& columns);
-
-void write_trajectories_to_file(std::vector<std::vector<std::vector<input_t>>> trajectories, std::ofstream& output_stream);
 
 #endif // MPH_RIPS_INCLUDED
