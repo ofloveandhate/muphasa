@@ -44,3 +44,11 @@ def computeSpatiotemporalLandscapesSparse(np.ndarray[double,ndim=3,mode="c"] tra
 
 	return res
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def computeSpatiotemporalLandscapesTreeSparse(positions_per_t, parents_per_t, pyMPH.input_t max_metric_value, int hom_dim):
+
+	res = pyMPH.landscapes_spatiotemporal_tree(positions_per_t, parents_per_t, max_metric_value, hom_dim)
+
+	return res
+

@@ -26,5 +26,6 @@ GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>& dis
 GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std::vector<std::vector<int>>& column_grades_h, std::vector<std::vector<int>>& low_matrix, std::vector<std::vector<int>>& column_grades_l);
 std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int>>& matrix, std::vector<std::vector<int>>& row_grades, std::vector<std::vector<int>>& column_grades);
 PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t max_metric_value, int hom_dim);
+PythonCompressedLandscape landscapes_spatiotemporal_tree(std::vector<std::vector<std::vector<input_t>>>& positions_per_t, std::vector<std::vector<int>>& parents_per_t, input_t max_metric_value, int hom_dim);
 
 #endif // MPH_BINDINGS_INCLUDED

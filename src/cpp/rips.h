@@ -144,18 +144,20 @@ void build_VR_subcomplex_grades(std::vector<std::vector<input_t>>& points, std::
 
 void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim);
 
-template <typename T> grade_t transform_grade(std::vector<T>& input_grade, std::vector<hash_map<T, index_t>>& grade_map){
-    /* Transforms the of the simplex of type 'input_t' to a 'grade_t' type.
-     
-     Arguments:
-        std::vector<T>& input_grade - the input grade to be transformed.
-        std::vector<hash_map<T, index_t>>& grade_map - a map mapping 'input_t' type values to the corresponding value in the grade_t type.
-     
+template <typename T> grade_t transform_grade(const std::vector<T>& input_grade, std::vector<hash_map<T, index_t>>& grade_map){
+    /* Discretises a real-valued grade vector to its integer-index form by looking up each
+     component in the per-axis grade_map (built by compute_grade_map). The output grade_t holds
+     int64 indices into the per-axis sorted-distinct-values list.
+
+     input_grade {std::vector<T>} -- the real-valued grade, one component per axis.
+     grade_map {std::vector<hash_map<T, index_t>>} -- per-axis lookup from real value to its
+        index in the sorted-distinct-values list for that axis.
+
      Returns:
-        grade_t - a transformed grade.
+     grade_t -- the discretised grade, with int64 indices in place of the real values.
      */
     grade_t grade;
-    for(size_t i=0; i<input_grade.size(); i++){
+    for (size_t i = 0; i < input_grade.size(); i++) {
         grade.push_back(grade_map[i][input_grade[i]]);
     }
     return grade;
@@ -363,7 +365,7 @@ template <typename T> std::pair<std::vector<hash_map<T, index_t>>,std::vector<st
 
 std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim);
 
-std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vector<input_t>>& point_cloud, Metric* metric);
+std::vector<std::vector<input_t>> compute_distance_matrix(const std::vector<std::vector<input_t>>& point_cloud, Metric* metric);
 
 std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim);
 

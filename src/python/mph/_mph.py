@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .pyMPH import doPresentation, doPresentationFIrep, doPresentationDm, computeGroebnerBases, computeSpatiotemporalLandscapesSparse
+from .pyMPH import doPresentation, doPresentationFIrep, doPresentationDm, computeGroebnerBases, computeSpatiotemporalLandscapesSparse, computeSpatiotemporalLandscapesTreeSparse
 
 
 METRIC_DICT = {
@@ -203,21 +203,40 @@ def groebner_bases(matrix: np.ndarray, column_grades: List[List[int]], row_grade
     ret = computeGroebnerBases(np.ascontiguousarray(matrix.T, dtype=np.int32), np.ascontiguousarray(row_grades, dtype=np.int32), np.ascontiguousarray(column_grades, dtype=np.int32))
     return GradedMatrix(ret[0]["matrix"], ret[0]["column_grades"], ret[0]["row_grades"]), GradedMatrix(ret[1]["matrix"], ret[1]["column_grades"], ret[1]["row_grades"])
 
-def compute_spatiotemporal_landscapes_sparse(trajectories: np.ndarray, max_metric_value: float, hom_dim: int) -> SparseLandscape:
-    ret = computeSpatiotemporalLandscapesSparse(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim)
+def _decode_compressed_landscape(ret) -> SparseLandscape:
+    # Grades come back in the layout (inverted_start_time, end_time, radius).
+    # Axes 0 and 1 are integer time indices stored as floats — no unit fix needed.
+    # Axis 2 is the Rips radius, computed by SquaredEuclideanMetric in C++ for
+    # speed (the binding hard-codes the metric), so we sqrt it back to Euclidean.
+    # Degenerate inputs (no simplices, or only vertices) produce a list shorter
+    # than 3, which is fine — there's no radius axis to fix.
     index_value_lists = ret["index_value_lists"]
-    index_value_lists[2] = list(map(math.sqrt, index_value_lists[2]))
-    
+    if len(index_value_lists) > 2:
+        index_value_lists[2] = list(map(math.sqrt, index_value_lists[2]))
+
     def transform_grade(grade: Grade) -> Grade:
         return Grade(index_value_lists[parameter][v] for parameter, v in enumerate(grade))
-    
-    pairings = [ (transform_grade(v), list(map(transform_grade, syzygies)))
-                                    for v, syzygies in ret["pairings"]]
 
+    pairings = [(transform_grade(v), list(map(transform_grade, syzygies)))
+                for v, syzygies in ret["pairings"]]
     return SparseLandscape(pairings)
+
+def compute_spatiotemporal_landscapes_sparse(trajectories: np.ndarray, max_metric_value: float, hom_dim: int) -> SparseLandscape:
+    ret = computeSpatiotemporalLandscapesSparse(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim)
+    return _decode_compressed_landscape(ret)
+
+def compute_spatiotemporal_landscapes_tree_sparse(positions_per_t: List[np.ndarray],
+                                                  parents_per_t: List[np.ndarray],
+                                                  max_metric_value: float,
+                                                  hom_dim: int) -> SparseLandscape:
+    positions_clean = [np.ascontiguousarray(p, dtype=np.float64) for p in positions_per_t]
+    parents_clean = [np.ascontiguousarray(p, dtype=np.int32) for p in parents_per_t]
+    ret = computeSpatiotemporalLandscapesTreeSparse(positions_clean, parents_clean,
+                                                    max_metric_value*max_metric_value, hom_dim)
+    return _decode_compressed_landscape(ret)
 
 # def compute_spatiotemporal_landscapes_naive(trajectories: np.ndarray, max_metric_value: float, hom_dim: int, landscape_dim: int):
 #     ret = computeSpatiotemporalLandscapesNaive(np.ascontiguousarray(trajectories, dtype=np.float64), max_metric_value*max_metric_value, hom_dim, landscape_dim)
 #     return ret
 
-__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "SparseLandscape"]
+__all__ = ["presentation", "presentation_dm", "presentation_FIrep", "groebner_bases", "GradedMatrix", "compute_spatiotemporal_landscapes_sparse", "compute_spatiotemporal_landscapes_tree_sparse", "SparseLandscape"]

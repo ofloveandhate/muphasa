@@ -173,6 +173,8 @@ GradedMatrix presentation(std::vector<std::vector<input_t>>& _points, std::vecto
 }
 
 
+namespace {
+
 std::vector<int> grade_indices_to_int_vector(const grade_t& grade) {
     std::vector<int> out;
     for ( auto& e : grade ) {
@@ -190,6 +192,28 @@ std::pair<std::vector<int>, std::vector<std::vector<int>>> translate_compressed_
 }
 
 
+PythonCompressedLandscape boundary_matrices_to_compressed_landscape(
+        Matrix& high_matrix,
+        Matrix& low_matrix,
+        std::vector<std::vector<input_t>>& index_value_lists) {
+    /* Shared tail of the spatiotemporal entry points: minimal presentation -> compressed landscape
+     -> Python-facing struct. index_value_lists translates integer critical values to underlying
+     filtration values and is forwarded as-is. */
+    std::pair<Matrix, std::vector<grade_t>> minimal_presentation =
+        computeMinimalPresentation_3p(high_matrix, low_matrix);
+    CompressedLandscape compressed_landscape =
+        computeCompressedLandscape(minimal_presentation.first, minimal_presentation.second);
+
+    PythonCompressedLandscape result;
+    for (auto& slice : compressed_landscape) {
+        result.pairings.push_back(translate_compressed_slice(slice));
+    }
+    result.index_value_lists = index_value_lists;
+    return result;
+}
+
+}  // namespace
+
 PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t max_metric_value, int hom_dim){
     /* Computes the spatiotemporal compressed landscape for a time-varying point cloud.
 
@@ -201,26 +225,41 @@ PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std:
      PythonCompressedLandscape -- a list of (birth, syzygies) pairs whose grade components are integer indices,
      plus index_value_lists, the per-axis lookup table that maps those indices back to real filtration values.
      */
-
-    // Build two boundary matrices C ->^F A ->^G B
     SquaredEuclideanMetric metric;
     Matrix high_matrix; Matrix low_matrix;
-    std::vector<std::vector<input_t>> index_value_lists; // translates integer critical values to underlying filtration values
-    std::tie(high_matrix, low_matrix, index_value_lists) = compute_boundary_matrices_spatiotemporal(trajectories, &metric, max_metric_value, hom_dim);
+    std::vector<std::vector<input_t>> index_value_lists;
+    std::tie(high_matrix, low_matrix, index_value_lists) =
+        compute_boundary_matrices_spatiotemporal(trajectories, &metric, max_metric_value, hom_dim);
+    return boundary_matrices_to_compressed_landscape(high_matrix, low_matrix, index_value_lists);
+}
 
-    // Compute minimal presentation
-    std::pair<Matrix, std::vector<grade_t>> minimal_presentation = computeMinimalPresentation_3p(high_matrix, low_matrix);
+PythonCompressedLandscape landscapes_spatiotemporal_tree(std::vector<std::vector<std::vector<input_t>>>& positions_per_t,
+                                                         std::vector<std::vector<int>>& parents_per_t,
+                                                         input_t max_metric_value,
+                                                         int hom_dim){
+    /* Computes the spatiotemporal compressed landscape for a tree-structured time-varying dataset
+     (e.g. a branching/mitosis process), where the vertex set is the agents alive at the final
+     timestep.
 
-    // Convert to compressed landscape
-    CompressedLandscape compressed_landscape = computeCompressedLandscape(minimal_presentation.first, minimal_presentation.second);
+     positions_per_t -- per-timestep positions of agents alive at each timestep, indexed
+        [timestep][agent_at_timestep][spatial_dim].
+     parents_per_t -- per-timestep parent indices into positions_per_t[t-1], or -1 if the agent's
+        lineage starts at this timestep. parents_per_t[0] is unused.
+     max_metric_value -- the maximum allowed metric value for inclusion in the Vietoris-Rips
+        complex (also used as the "edge missing" sentinel for pairs whose lineages weren't both
+        alive at a given time).
+     hom_dim -- homology dimension.
 
-    // Convert to Python-facing struct
-    PythonCompressedLandscape python_compressed_landscape;
-    for ( auto& slice : compressed_landscape ) {
-        python_compressed_landscape.pairings.push_back(translate_compressed_slice(slice));
-    }
-    python_compressed_landscape.index_value_lists = index_value_lists;
-    return python_compressed_landscape;
+     Returns:
+     PythonCompressedLandscape -- same shape as landscapes_spatiotemporal output.
+     */
+    SquaredEuclideanMetric metric;
+    Matrix high_matrix; Matrix low_matrix;
+    std::vector<std::vector<input_t>> index_value_lists;
+    std::tie(high_matrix, low_matrix, index_value_lists) =
+        compute_boundary_matrices_spatiotemporal_tree(positions_per_t, parents_per_t, &metric,
+                                                      max_metric_value, hom_dim);
+    return boundary_matrices_to_compressed_landscape(high_matrix, low_matrix, index_value_lists);
 }
 
 PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim, int landscape_dim){

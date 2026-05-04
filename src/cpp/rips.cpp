@@ -227,14 +227,22 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
 }
 
 
-std::vector<std::vector<input_t>> compute_distance_matrix(std::vector<std::vector<input_t>>& point_cloud, Metric* metric) {
-    /* Compressed distance matrix */
+std::vector<std::vector<input_t>> compute_distance_matrix(const std::vector<std::vector<input_t>>& point_cloud, Metric* metric) {
+    /* Computes the lower-triangular pairwise-distance matrix for a point cloud under the given
+     metric. Row i has length i+1: entries [i][j] for j <= i.
+
+     point_cloud {std::vector<std::vector<input_t>>} -- list of points; each point is a vector of
+        spatial coordinates.
+     metric {Metric*} -- metric used to compute pairwise distances.
+
+     Returns:
+     std::vector<std::vector<input_t>> -- lower-triangular distance matrix, indexed [i][j] with j <= i.
+     */
     std::vector<std::vector<input_t>> values;
     for (size_t i = 0; i < point_cloud.size(); i++) {
         std::vector<input_t> row;
-        for (size_t j = 0; j <= i ; j++) {
-            input_t val = (((*metric).eval(point_cloud[i], point_cloud[j])));
-            row.push_back(val);
+        for (size_t j = 0; j <= i; j++) {
+            row.push_back(metric->eval(point_cloud[i], point_cloud[j]));
         }
         values.push_back(row);
     }
