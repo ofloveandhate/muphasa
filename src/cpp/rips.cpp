@@ -24,10 +24,10 @@ Filter* parse_filter(int filter_index){
     }
 }
 
-void build_VR_subcomplex(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
+void build_VR_subcomplex(PointCloud& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex.
 
-     points {std::vector<std::vector<input_t>>} -- a list of points in space.
+     points {PointCloud} -- a list of points in space.
      metrics {std::vector<Metric>} -- a list of metrics on the points that should be used to contruct the complex.
      filters {std::vector<Filter>} -- a list of filter functions on the points that should be used to contruct the complex.
      vertices {std::vector<size_t>} -- a list of the current vertices in the simplex being contructed.
@@ -85,10 +85,10 @@ void build_VR_subcomplex(std::vector<std::vector<input_t>>& points, std::vector<
 
 
 
-void build_VR_subcomplex_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& point_grades, std::vector<size_t>& vertices, grade_t& prev_grade, grade_t& max_grade, std::vector<Simplex<index_t>>& low_simplices, std::vector<Simplex<index_t>>& mid_simplices, std::vector<Simplex<index_t>>& high_simplices, int hom_dim){
+void build_VR_subcomplex_grades(PointCloud& points, std::vector<grade_t>& point_grades, std::vector<size_t>& vertices, grade_t& prev_grade, grade_t& max_grade, std::vector<Simplex<index_t>>& low_simplices, std::vector<Simplex<index_t>>& mid_simplices, std::vector<Simplex<index_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex.
 
-     points {std::vector<std::vector<input_t>>} -- a list of points in space.
+     points {PointCloud} -- a list of points in space.
      metrics {std::vector<Metric>} -- a list of metrics on the points that should be used to contruct the complex.
      filters {std::vector<Filter>} -- a list of filter functions on the points that should be used to contruct the complex.
      vertices {std::vector<size_t>} -- a list of the current vertices in the simplex being contructed.
@@ -126,10 +126,10 @@ void build_VR_subcomplex_grades(std::vector<std::vector<input_t>>& points, std::
 
 
 
-void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
+void build_VR_subcomplex_dm(DistanceMatrices& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim){
     /* Helper function to recursively compute the Vietoris-Rips complex.
 
-     distance_matrices {std::vector<std::vector<std::vector<input_t>>>} -- a list of distance matrices.
+     distance_matrices {DistanceMatrices} -- a list of distance matrices.
      filters {std::vector<std::vector<input_t>>} -- a list of evaluations of filter functions on the points that will be used to contruct the complex.
      vertices {std::vector<size_t>} -- a list of the current vertices in the simplex being contructed.
      prev_values {std::vector<input_t>} -- the grade of the current simplex being contructed.
@@ -185,7 +185,7 @@ void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>& dist
 }
 
 
-std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices(PointCloud& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
 
      points {std::vector<std::vector<S>>} -- a list of points in space.
@@ -215,7 +215,7 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
                 curr_values.push_back((*filters[filter_index]).eval(points[i]));
             }
 
-            std::vector<std::vector<input_t>> points_bak = points;
+            PointCloud points_bak = points;
 
             build_VR_subcomplex(points, metrics, filters, vertices, curr_values, max_metric_values, low_simplices, mid_simplices, high_simplices, hom_dim);
         }
@@ -227,18 +227,17 @@ std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<inpu
 }
 
 
-std::vector<std::vector<input_t>> compute_distance_matrix(const std::vector<std::vector<input_t>>& point_cloud, Metric* metric) {
+DistanceMatrix compute_distance_matrix(const PointCloud& point_cloud, Metric* metric) {
     /* Computes the lower-triangular pairwise-distance matrix for a point cloud under the given
      metric. Row i has length i+1: entries [i][j] for j <= i.
 
-     point_cloud {std::vector<std::vector<input_t>>} -- list of points; each point is a vector of
-        spatial coordinates.
+     point_cloud {PointCloud} -- list of points; each point is a vector of spatial coordinates.
      metric {Metric*} -- metric used to compute pairwise distances.
 
      Returns:
-     std::vector<std::vector<input_t>> -- lower-triangular distance matrix, indexed [i][j] with j <= i.
+     DistanceMatrix -- lower-triangular distance matrix, indexed [i][j] with j <= i.
      */
-    std::vector<std::vector<input_t>> values;
+    DistanceMatrix values;
     for (size_t i = 0; i < point_cloud.size(); i++) {
         std::vector<input_t> row;
         for (size_t j = 0; j <= i; j++) {
@@ -252,7 +251,7 @@ std::vector<std::vector<input_t>> compute_distance_matrix(const std::vector<std:
 
 
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices_grades(PointCloud& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
 
      points {std::vector<std::vector<S>>} -- a list of points in space.
@@ -276,7 +275,7 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
 
             grade_t grade = grades[i];
 
-            std::vector<std::vector<input_t>> points_bak = points;
+            PointCloud points_bak = points;
 
             build_VR_subcomplex_grades(points, grades, vertices, grade, max_grade, low_simplices, mid_simplices, high_simplices, hom_dim);
         }
@@ -288,10 +287,10 @@ std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vect
 }
 
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
+std::pair<Matrix, Matrix> compute_boundary_matrices_dm(DistanceMatrices& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
     /* Computes the two boundary matrices of the Vietoris-Rips complex needed to compute the homology of dimension 'hom_dim'.
 
-     distance_matrices {std::vector<std::vector<std::vector<input_t>>>} -- a list of distance matrices.
+     distance_matrices {DistanceMatrices} -- a list of distance matrices.
      max_metric_values {std::vector<S>} -- the maximum allowed distances for each metric respectively.
      filters {std::vector<std::vector<input_t>>} -- a list of evaluations of filter functions on the points that will be used to contruct the complex.
      hom_dim {int} -- the dimension of the homology to be computed.
@@ -350,7 +349,7 @@ void verify_kernel(Matrix& kernel, Matrix& map){
 }
 
 
-std::vector<std::vector<input_t>> read_point_cloud(std::istream& input_stream, int precision) {
+PointCloud read_point_cloud(std::istream& input_stream, int precision) {
     /** Reads a point cloud from input.
 
      The input should be formatted as: p_11 p_12 ... p_1m
@@ -361,9 +360,9 @@ std::vector<std::vector<input_t>> read_point_cloud(std::istream& input_stream, i
             int precision -- the number of bits of precision TODO: refactor the precision.
 
      Returns:
-            std::vector<std::vector<input_t>> -- a list of points represented as vectors with entries of type 'input_t'.
+            PointCloud -- a list of points represented as vectors with entries of type 'input_t'.
      **/
-    std::vector<std::vector<input_t>> points;
+    PointCloud points;
     std::string line;
     input_t value;
     while (std::getline(input_stream, line)) {

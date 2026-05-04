@@ -10,6 +10,11 @@
 #include "signatureColumn.h"
 
 
+using PointCloud       = std::vector<std::vector<input_t>>;          // [point][dim]
+using DistanceMatrix   = std::vector<std::vector<input_t>>;          // [i][j], lower-triangular: row i has length i+1
+using DistanceMatrices = std::vector<DistanceMatrix>;                // [outer][i][j] — outer axis is filter or time
+
+
 //TODO: fix the virtual/override of the metrics and filters.
 class Metric{
     /** Abstract class representing a metric. **/
@@ -54,9 +59,9 @@ public:
 
 class DensityFilter : public Filter{
 public:
-    std::vector<std::vector<input_t>> points;
+    PointCloud points;
     hash_map<std::vector<input_t>*, input_t> cache;
-    DensityFilter(std::vector<std::vector<input_t>>& _points) : Filter(){
+    DensityFilter(PointCloud& _points) : Filter(){
         points = _points;
     }
     virtual input_t eval(std::vector<input_t> a) override{
@@ -138,11 +143,11 @@ struct VectorHasher
 Metric* parse_metric(int metric_index);
 Filter* parse_filter(int filter_index);
 
-void build_VR_subcomplex(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim);
+void build_VR_subcomplex(PointCloud& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim);
 
-void build_VR_subcomplex_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& point_grades, std::vector<size_t>& vertices, grade_t& prev_grade, grade_t& max_grade, std::vector<Simplex<index_t>>& low_simplices, std::vector<Simplex<index_t>>& mid_simplices, std::vector<Simplex<index_t>>& high_simplices, int hom_dim);
+void build_VR_subcomplex_grades(PointCloud& points, std::vector<grade_t>& point_grades, std::vector<size_t>& vertices, grade_t& prev_grade, grade_t& max_grade, std::vector<Simplex<index_t>>& low_simplices, std::vector<Simplex<index_t>>& mid_simplices, std::vector<Simplex<index_t>>& high_simplices, int hom_dim);
 
-void build_VR_subcomplex_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim);
+void build_VR_subcomplex_dm(DistanceMatrices& distance_matrices, std::vector<std::vector<input_t>>& filters, std::vector<size_t>& vertices, std::vector<input_t>& prev_values, std::vector<input_t>& max_metric_values, std::vector<Simplex<input_t>>& low_simplices, std::vector<Simplex<input_t>>& mid_simplices, std::vector<Simplex<input_t>>& high_simplices, int hom_dim);
 
 template <typename T> grade_t transform_grade(const std::vector<T>& input_grade, std::vector<hash_map<T, index_t>>& grade_map){
     /* Discretises a real-valued grade vector to its integer-index form by looking up each
@@ -363,18 +368,18 @@ template <typename T> std::pair<std::vector<hash_map<T, index_t>>,std::vector<st
     return std::pair<std::vector<hash_map<T, index_t>>, std::vector<std::vector<T>>>(grade_map, index_value_lists);
 }
 
-std::pair<Matrix, Matrix> compute_boundary_matrices(std::vector<std::vector<input_t>>& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim);
+std::pair<Matrix, Matrix> compute_boundary_matrices(PointCloud& points, std::vector<Metric*>& metrics, std::vector<Filter*>& filters, std::vector<input_t>& max_metric_values, int hom_dim);
 
-std::vector<std::vector<input_t>> compute_distance_matrix(const std::vector<std::vector<input_t>>& point_cloud, Metric* metric);
+DistanceMatrix compute_distance_matrix(const PointCloud& point_cloud, Metric* metric);
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_grades(std::vector<std::vector<input_t>>& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim);
+std::pair<Matrix, Matrix> compute_boundary_matrices_grades(PointCloud& points, std::vector<grade_t>& grades, grade_t& max_grade, int hom_dim);
 
-std::pair<Matrix, Matrix> compute_boundary_matrices_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim);
+std::pair<Matrix, Matrix> compute_boundary_matrices_dm(DistanceMatrices& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim);
 
 void verify_kernel(Matrix& kernel, Matrix& map);
 
 
-std::vector<std::vector<input_t>> read_point_cloud(std::istream& input_stream, int precision);
+PointCloud read_point_cloud(std::istream& input_stream, int precision);
 
 template <typename SignatureColumn, typename Column> void read_input_file(std::istream& input_stream, std::vector<CustomSignatureColumn<SignatureColumn, Column>>& high_matrix, std::vector<CustomSignatureColumn<SignatureColumn, Column>>& low_matrix, int precision=1){
     /**

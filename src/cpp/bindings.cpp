@@ -97,7 +97,7 @@ GradedMatrix presentation_FIrep(std::vector<std::vector<int>>& high_matrix, std:
     return graded_matrix;
 }
 
-GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
+GradedMatrix presentation_dm(DistanceMatrices& distance_matrices, std::vector<input_t>& max_metric_values, std::vector<std::vector<input_t>>& filters, int hom_dim){
     std::pair<Matrix, Matrix> boundary_matrices = compute_boundary_matrices_dm(distance_matrices, max_metric_values, filters, hom_dim);
     verify_kernel(boundary_matrices.first, boundary_matrices.second);
     for(size_t i=0; i<boundary_matrices.second.size(); i++){
@@ -126,7 +126,7 @@ GradedMatrix presentation_dm(std::vector<std::vector<std::vector<input_t>>>& dis
     return graded_matrix;
 }
 
-GradedMatrix presentation(std::vector<std::vector<input_t>>& _points, std::vector<int>& _metrics, std::vector<input_t>& _max_metric_values, std::vector<int>& _filters, int hom_dim){
+GradedMatrix presentation(PointCloud& _points, std::vector<int>& _metrics, std::vector<input_t>& _max_metric_values, std::vector<int>& _filters, int hom_dim){
     std::vector<Metric*> metrics;
     for(size_t i=0; i<_metrics.size(); i++){
         metrics.push_back(parse_metric(_metrics[i]));
@@ -214,10 +214,10 @@ PythonCompressedLandscape boundary_matrices_to_compressed_landscape(
 
 }  // namespace
 
-PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t max_metric_value, int hom_dim){
+PythonCompressedLandscape landscapes_spatiotemporal(Trajectories& trajectories, input_t max_metric_value, int hom_dim){
     /* Computes the spatiotemporal compressed landscape for a time-varying point cloud.
 
-     trajectories {std::vector<std::vector<std::vector<input_t>>>} -- a time-varying point cloud of shape n_agents x n_timepoints x n_spatial_dim
+     trajectories {Trajectories} -- a time-varying point cloud of shape n_agents x n_timepoints x n_spatial_dim
      max_metric_value {input_t} -- the maximum allowed metric value for inclusion in the Vietoris-Rips complex.
      hom_dim {int} -- homology dimesion
 
@@ -233,7 +233,7 @@ PythonCompressedLandscape landscapes_spatiotemporal(std::vector<std::vector<std:
     return boundary_matrices_to_compressed_landscape(high_matrix, low_matrix, index_value_lists);
 }
 
-PythonCompressedLandscape landscapes_spatiotemporal_tree(std::vector<std::vector<std::vector<input_t>>>& positions_per_t,
+PythonCompressedLandscape landscapes_spatiotemporal_tree(PositionsPerTime& positions_per_t,
                                                          std::vector<std::vector<int>>& parents_per_t,
                                                          input_t max_metric_value,
                                                          int hom_dim){
@@ -262,7 +262,7 @@ PythonCompressedLandscape landscapes_spatiotemporal_tree(std::vector<std::vector
     return boundary_matrices_to_compressed_landscape(high_matrix, low_matrix, index_value_lists);
 }
 
-PythonLandscape landscapes_spatiotemporal_naive(std::vector<std::vector<std::vector<input_t>>>& trajectories, input_t& max_metric_value, int hom_dim, int landscape_dim){
+PythonLandscape landscapes_spatiotemporal_naive(Trajectories& trajectories, input_t& max_metric_value, int hom_dim, int landscape_dim){
     Metric* m = new SquaredEuclideanMetric();
     Matrix high_matrix; Matrix low_matrix;
     std::vector<std::vector<input_t>> index_value_lists;

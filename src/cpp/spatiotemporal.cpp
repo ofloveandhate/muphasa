@@ -5,7 +5,7 @@
 // Sentinel for "no parent / lineage absent" in parent-index arrays and ancestor-lookup tables.
 static constexpr int NO_PARENT = -1;
 
-static input_t try_extend_at_timestep(const std::vector<std::vector<input_t>>& dm_at_t,
+static input_t try_extend_at_timestep(const DistanceMatrix& dm_at_t,
                                       size_t new_vertex,
                                       const std::vector<size_t>& existing,
                                       input_t max_metric_value,
@@ -19,7 +19,7 @@ static input_t try_extend_at_timestep(const std::vector<std::vector<input_t>>& d
     return curr_max_dist;
 }
 
-void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms,
+void build_VR_subcomplex_spatiotemporal(DistanceMatrices& trajectory_dms,
                                         std::vector<size_t>& vertices,
                                         input_t prev_max_dist,
                                         input_t max_metric_value,
@@ -30,8 +30,8 @@ void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<inpu
     /* Helper function to recursively compute the Vietoris-Rips complex for a dynamic metric space
      in the sense of Memoli/Kim (2020).
 
-     trajectory_dms {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep distance
-        matrices for the trajectories, indexed [timestep][i][j].
+     trajectory_dms {DistanceMatrices} -- per-timestep distance matrices for the trajectories,
+        indexed [timestep][i][j].
      vertices {std::vector<size_t>} -- vertex list of the simplex currently being built
      prev_max_dist {input_t} -- the largest pairwise distance seen so far across all edges of the
         current simplex (i.e. the simplex's Rips radius).
@@ -68,25 +68,23 @@ void build_VR_subcomplex_spatiotemporal(std::vector<std::vector<std::vector<inpu
     }
 }
 
-std::vector<std::vector<std::vector<input_t>>> get_trajectory_dms(std::vector<std::vector<std::vector<input_t>>>& trajectories, Metric* metric){
+DistanceMatrices get_trajectory_dms(Trajectories& trajectories, Metric* metric){
     /* Computes the pairwise-distance matrix at each timestep of a time-varying point cloud.
 
-     trajectories {std::vector<std::vector<std::vector<input_t>>>} -- the time-varying point cloud,
-        indexed [point][timestep][spatial_dim].
+     trajectories {Trajectories} -- the time-varying point cloud, indexed [point][timestep][spatial_dim].
      metric {Metric*} -- metric used to compute pairwise distances.
 
      Returns:
-     std::vector<std::vector<std::vector<input_t>>> -- per-timestep distance matrices, indexed
-        [timestep][i][j].
+     DistanceMatrices -- per-timestep distance matrices, indexed [timestep][i][j].
      */
-    std::vector<std::vector<std::vector<input_t>>> distance_matrices;
+    DistanceMatrices distance_matrices;
 
     if (trajectories.size() == 0) {
         return distance_matrices;
     }
 
     for (size_t timestep = 0; timestep < trajectories[0].size(); timestep++) {
-        std::vector<std::vector<input_t>> point_cloud;
+        PointCloud point_cloud;
         for (size_t point = 0; point < trajectories.size(); point++) {
             point_cloud.push_back(trajectories[point][timestep]);
         }
@@ -130,15 +128,14 @@ build_ancestor_lookup(const std::vector<std::vector<int>>& parents_per_t, size_t
 }
 
 
-std::vector<std::vector<std::vector<input_t>>>
-tree_positions_to_dms(const std::vector<std::vector<std::vector<input_t>>>& positions_per_t,
-                      const std::vector<std::vector<int>>& ancestor_lookup,
-                      Metric* metric,
-                      input_t max_metric_value) {
+DistanceMatrices tree_positions_to_dms(const PositionsPerTime& positions_per_t,
+                                       const std::vector<std::vector<int>>& ancestor_lookup,
+                                       Metric* metric,
+                                       input_t max_metric_value) {
     /* Builds per-timestep N_leaves x N_leaves distance matrices for tree-structured input.
 
-     positions_per_t {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep positions
-        of agents alive at each timestep, indexed [timestep][agent_at_timestep][spatial_dim].
+     positions_per_t {PositionsPerTime} -- per-timestep positions of agents alive at each timestep,
+        indexed [timestep][agent_at_timestep][spatial_dim].
      ancestor_lookup {std::vector<std::vector<int>>} -- output of build_ancestor_lookup, indexed
         [leaf][timestep].
      metric {Metric*} -- metric used to compute pairwise distances between ancestor positions.
@@ -146,10 +143,10 @@ tree_positions_to_dms(const std::vector<std::vector<std::vector<input_t>>>& posi
         one of the two leaves' lineages didn't exist yet).
 
      Returns:
-     std::vector<std::vector<std::vector<input_t>>> -- per-timestep distance matrices in the same
-        lower-triangular layout as compute_distance_matrix: dm[t][i] has length i+1, valid for
-        accesses dm[t][i][j] with j <= i. Entries where either lineage was missing at that
-        timestep are set to max_metric_value (which the engine treats as "edge missing").
+     DistanceMatrices -- per-timestep distance matrices in the same lower-triangular layout as
+        compute_distance_matrix: dm[t][i] has length i+1, valid for accesses dm[t][i][j] with
+        j <= i. Entries where either lineage was missing at that timestep are set to
+        max_metric_value (which the engine treats as "edge missing").
      */
     size_t T = positions_per_t.size();
     size_t n_leaves = ancestor_lookup.size();
@@ -157,7 +154,7 @@ tree_positions_to_dms(const std::vector<std::vector<std::vector<input_t>>>& posi
     // Lower-triangular layout (matching compute_distance_matrix / get_trajectory_dms): the engine
     // only ever reads dm[bigger][smaller], so the upper triangle is never needed. Halves memory
     // and zero-init traffic vs a full square.
-    std::vector<std::vector<std::vector<input_t>>> dms(T);
+    DistanceMatrices dms(T);
     for (size_t t = 0; t < T; t++) {
         dms[t].resize(n_leaves);
         for (size_t i = 0; i < n_leaves; i++) {
@@ -177,15 +174,15 @@ tree_positions_to_dms(const std::vector<std::vector<std::vector<input_t>>>& posi
 }
 
 
-input_t interlevel_rips_radius(const std::vector<std::vector<std::vector<input_t>>>& trajectory_dms,
+input_t interlevel_rips_radius(const DistanceMatrices& trajectory_dms,
                                const std::vector<size_t>& vertices,
                                size_t start_time,
                                size_t end_time) {
     /* The Rips radius of a simplex over the time window [start_time, end_time] of the
      interlevel-rips filtration.
 
-     trajectory_dms {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep distance
-        matrices for the trajectories, indexed [timestep][i][j].
+     trajectory_dms {DistanceMatrices} -- per-timestep distance matrices for the trajectories,
+        indexed [timestep][i][j].
      vertices {std::vector<size_t>} -- vertex list of the simplex.
      start_time {size_t} -- inclusive start of the time window.
      end_time {size_t} -- inclusive end of the time window.
@@ -208,13 +205,13 @@ input_t interlevel_rips_radius(const std::vector<std::vector<std::vector<input_t
 
 
 
-std::vector<Simplex<input_t>> calculate_birth_grades(const std::vector<std::vector<std::vector<input_t>>>& trajectory_dms,
+std::vector<Simplex<input_t>> calculate_birth_grades(const DistanceMatrices& trajectory_dms,
                                                      input_t max_metric_value,
                                                      const std::vector<Simplex<input_t>>& simplices) {
     /*
 
-     trajectory_dms {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep distance
-        matrices for the trajectories, indexed [timestep][i][j].
+     trajectory_dms {DistanceMatrices} -- per-timestep distance matrices for the trajectories,
+        indexed [timestep][i][j].
      max_metric_value {input_t} -- maximum allowed Rips radius; grades whose radius is at or
         above this are dropped.
      simplices {std::vector<Simplex<input_t>>} -- input simplices, each with a 1-element grade
@@ -275,16 +272,16 @@ std::vector<Simplex<input_t>> calculate_birth_grades(const std::vector<std::vect
 
 
 std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>
-compute_boundary_matrices_spatiotemporal_dm(std::vector<std::vector<std::vector<input_t>>>& trajectory_dms,
+compute_boundary_matrices_spatiotemporal_dm(DistanceMatrices& trajectory_dms,
                                             input_t max_metric_value,
                                             int hom_dim){
     /* Computes the two boundary matrices of the dynamic Vietoris-Rips complex needed to compute the
      homology of dimension 'hom_dim', from pre-computed per-timestep distance matrices.
 
-     trajectory_dms {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep distance
-        matrices, indexed [timestep][i][j]. Entries at or above max_metric_value are treated as
-        "edge missing" at that timestep, which lets the caller encode unrealised vertex pairs
-        (e.g. two leaves of a lineage tree whose ancestors weren't both alive yet).
+     trajectory_dms {DistanceMatrices} -- per-timestep distance matrices, indexed [timestep][i][j].
+        Entries at or above max_metric_value are treated as "edge missing" at that timestep, which
+        lets the caller encode unrealised vertex pairs (e.g. two leaves of a lineage tree whose
+        ancestors weren't both alive yet).
      max_metric_value {input_t} -- maximum allowed distance for inclusion in the complex.
      hom_dim {int} -- the dimension of the homology to be computed.
 
@@ -333,26 +330,25 @@ compute_boundary_matrices_spatiotemporal_dm(std::vector<std::vector<std::vector<
 
 
 std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>
-compute_boundary_matrices_spatiotemporal(std::vector<std::vector<std::vector<input_t>>>& trajectories,
+compute_boundary_matrices_spatiotemporal(Trajectories& trajectories,
                                          Metric* metric,
                                          input_t max_metric_value,
                                          int hom_dim){
     /* Convenience wrapper around compute_boundary_matrices_spatiotemporal_dm: builds per-timestep
      distance matrices from a time-varying point cloud, then forwards.
 
-     trajectories {std::vector<std::vector<std::vector<input_t>>>} -- a time-varying point cloud,
-        indexed [point][timestep][spatial_dim].
+     trajectories {Trajectories} -- a time-varying point cloud, indexed [point][timestep][spatial_dim].
      metric {Metric*} -- metric used to construct the per-timestep distance matrices.
      max_metric_value {input_t} -- maximum allowed distance for inclusion in the complex.
      hom_dim {int} -- the dimension of the homology to be computed.
      */
-    std::vector<std::vector<std::vector<input_t>>> trajectory_dms = get_trajectory_dms(trajectories, metric);
+    DistanceMatrices trajectory_dms = get_trajectory_dms(trajectories, metric);
     return compute_boundary_matrices_spatiotemporal_dm(trajectory_dms, max_metric_value, hom_dim);
 }
 
 
 std::tuple<Matrix, Matrix, std::vector<std::vector<input_t>>>
-compute_boundary_matrices_spatiotemporal_tree(std::vector<std::vector<std::vector<input_t>>>& positions_per_t,
+compute_boundary_matrices_spatiotemporal_tree(PositionsPerTime& positions_per_t,
                                               std::vector<std::vector<int>>& parents_per_t,
                                               Metric* metric,
                                               input_t max_metric_value,
@@ -362,8 +358,8 @@ compute_boundary_matrices_spatiotemporal_tree(std::vector<std::vector<std::vecto
      timestep), and forwards. Pairs of leaves whose lineages weren't both alive at a given time
      get distance >= max_metric_value at that time, which the engine treats as "edge missing".
 
-     positions_per_t {std::vector<std::vector<std::vector<input_t>>>} -- per-timestep positions
-        of agents alive at each timestep, indexed [timestep][agent_at_timestep][spatial_dim].
+     positions_per_t {PositionsPerTime} -- per-timestep positions of agents alive at each timestep,
+        indexed [timestep][agent_at_timestep][spatial_dim].
      parents_per_t {std::vector<std::vector<int>>} -- per-timestep parent indices, indexed
         [timestep][agent_at_timestep]. Each entry is an index into positions_per_t[t-1], or -1
         if the agent's lineage starts at this timestep. parents_per_t[0] is unused.
@@ -372,12 +368,12 @@ compute_boundary_matrices_spatiotemporal_tree(std::vector<std::vector<std::vecto
      hom_dim {int} -- the dimension of the homology to be computed.
      */
     if (positions_per_t.size() == 0) {
-        std::vector<std::vector<std::vector<input_t>>> empty_dms;
+        DistanceMatrices empty_dms;
         return compute_boundary_matrices_spatiotemporal_dm(empty_dms, max_metric_value, hom_dim);
     }
     size_t n_leaves = positions_per_t.back().size();
     std::vector<std::vector<int>> ancestor_lookup = build_ancestor_lookup(parents_per_t, n_leaves);
-    std::vector<std::vector<std::vector<input_t>>> trajectory_dms =
+    DistanceMatrices trajectory_dms =
         tree_positions_to_dms(positions_per_t, ancestor_lookup, metric, max_metric_value);
     return compute_boundary_matrices_spatiotemporal_dm(trajectory_dms, max_metric_value, hom_dim);
 }
