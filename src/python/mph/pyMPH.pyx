@@ -52,3 +52,11 @@ def computeSpatiotemporalLandscapesTreeSparse(positions_per_t, parents_per_t, py
 
 	return res
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def evalSparseLandscapeBatch(pairings, np.ndarray[double, ndim=2, mode="c"] grades not None, int k_max):
+
+	res = pyMPH.eval_sparse_landscape_batch(pairings, grades, k_max)
+
+	return res
+

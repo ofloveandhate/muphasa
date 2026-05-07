@@ -32,4 +32,6 @@ cdef extern from "bindings.h":
 
 	PythonCompressedLandscape landscapes_spatiotemporal_tree(vector[vector[vector[input_t]]]& positions_per_t, vector[vector[int]]& parents_per_t, input_t max_metric_value, int hom_dim) except +
 
+	vector[vector[input_t]] eval_sparse_landscape_batch(vector[pair[vector[input_t], vector[vector[input_t]]]]& pairings, vector[vector[input_t]]& grades, int k_max) except +
+
 	# PythonLandscape landscapes_spatiotemporal_naive(vector[vector[vector[input_t]]] trajectories, input_t max_metric_value, int hom_dim, int landscape_dim) except +

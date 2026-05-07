@@ -1,5 +1,7 @@
 #include "bindings.h"
 
+#include <algorithm>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -237,21 +239,21 @@ PythonCompressedLandscape landscapes_spatiotemporal_tree(PositionsPerTime& posit
                                                          std::vector<std::vector<int>>& parents_per_t,
                                                          input_t max_metric_value,
                                                          int hom_dim){
-    /* Computes the spatiotemporal compressed landscape for a tree-structured time-varying dataset
-     (e.g. a branching/mitosis process), where the vertex set is the agents alive at the final
-     timestep.
+    /* Computes the spatiotemporal compressed landscape for a tree structured time-varying dataset
+     (e.g. a branching/mitosis process). The vertex set is every leaf of the lineage tree (every
+     node with no children, whether it dies at the final timestep or earlier).
 
-     positions_per_t -- per-timestep positions of agents alive at each timestep, indexed
+     positions_per_t: per-timestep positions of agents alive at each timestep, indexed
         [timestep][agent_at_timestep][spatial_dim].
-     parents_per_t -- per-timestep parent indices into positions_per_t[t-1], or -1 if the agent's
+     parents_per_t: per-timestep parent indices into positions_per_t[t-1], or -1 if the agent's
         lineage starts at this timestep. parents_per_t[0] is unused.
-     max_metric_value -- the maximum allowed metric value for inclusion in the Vietoris-Rips
+     max_metric_value: the maximum allowed metric value for inclusion in the Vietoris-Rips
         complex (also used as the "edge missing" sentinel for pairs whose lineages weren't both
-        alive at a given time).
-     hom_dim -- homology dimension.
+        alive at a given time, including times before birth or after death).
+     hom_dim: homology dimension.
 
      Returns:
-     PythonCompressedLandscape -- same shape as landscapes_spatiotemporal output.
+     PythonCompressedLandscape: same shape as landscapes_spatiotemporal output.
      */
     SquaredEuclideanMetric metric;
     Matrix high_matrix; Matrix low_matrix;
@@ -260,6 +262,113 @@ PythonCompressedLandscape landscapes_spatiotemporal_tree(PositionsPerTime& posit
         compute_boundary_matrices_spatiotemporal_tree(positions_per_t, parents_per_t, &metric,
                                                       max_metric_value, hom_dim);
     return boundary_matrices_to_compressed_landscape(high_matrix, low_matrix, index_value_lists);
+}
+
+namespace {
+
+bool float_grade_leq_poset(const std::vector<input_t>& a, const std::vector<input_t>& b) {
+    /* Componentwise <= on full grades — matches Grade.__le__ in _mph.py. */
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i] > b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool float_grade_prefix_leq_poset(const std::vector<input_t>& a, const std::vector<input_t>& b,
+                                  size_t prefix_len) {
+    /* Componentwise <= on the first prefix_len components — matches Python's syzygy[:-1] <= grade[:-1]
+     when prefix_len == grade.size() - 1. */
+    for (size_t i = 0; i < prefix_len; ++i) {
+        if (a[i] > b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool float_grade_lt_colex(const std::vector<input_t>& a, const std::vector<input_t>& b) {
+    /* Strict colex order: compare components from last to first. Mirrors Grade.colex_compare
+     in _mph.py. */
+    for (size_t i = a.size(); i-- > 0; ) {
+        if (a[i] < b[i]) {
+            return true;
+        }
+        if (a[i] > b[i]) {
+            return false;
+        }
+    }
+    return false;
+}
+
+}  // namespace
+
+std::vector<std::vector<input_t>> eval_sparse_landscape_batch(
+        std::vector<std::pair<std::vector<input_t>, std::vector<std::vector<input_t>>>>& pairings,
+        std::vector<std::vector<input_t>>& grades,
+        int k_max) {
+    /* Batch-evaluate a SparseLandscape on N grades for layers 1..k_max, mirroring the
+     Python SparseLandscape.eval algorithm but in C++. Pairings are passed in with float
+     grades (axis-2 already sqrt'd into Euclidean distance by the Python caller).
+
+     pairings -- (birth, syzygies) entries; syzygies are sorted by colex in-place once
+        per batch call so the per-grade inner loop can break on the first prefix-fitting one.
+     grades -- N input grades, shape (N, d). All grades and births must share dimension d.
+     k_max -- top landscape layer to evaluate; layer k goes to out[i][k-1].
+
+     Returns:
+     out -- shape (N, k_max). out[i][k-1] is layer k of the landscape evaluated at grades[i],
+        or 0 if fewer than k bars are alive there. */
+
+    if (k_max <= 0) {
+        return std::vector<std::vector<input_t>>(grades.size(), std::vector<input_t>());
+    }
+    std::vector<std::vector<input_t>> out(grades.size(), std::vector<input_t>(k_max, 0.0));
+    if (grades.empty() || pairings.empty()) {
+        return out;
+    }
+
+    for (auto& p : pairings) {
+        std::sort(p.second.begin(), p.second.end(), float_grade_lt_colex);
+    }
+
+    std::vector<input_t> diffs;
+    for (size_t gi = 0; gi < grades.size(); ++gi) {
+        const std::vector<input_t>& grade = grades[gi];
+        const size_t r = grade.size() - 1;
+        diffs.clear();
+
+        for (const auto& entry : pairings) {
+            const std::vector<input_t>& birth = entry.first;
+            if (!float_grade_leq_poset(birth, grade)) {
+                continue;
+            }
+            const input_t low_distance = grade[r] - birth[r];
+            input_t high_distance = std::numeric_limits<input_t>::infinity();
+            for (const auto& syzygy : entry.second) {
+                if (float_grade_prefix_leq_poset(syzygy, grade, r)) {
+                    high_distance = syzygy[r] - grade[r];
+                    break;
+                }
+            }
+            input_t contribution = std::min(low_distance, high_distance);
+            if (contribution < 0) {
+                contribution = 0;
+            }
+            diffs.push_back(contribution);
+        }
+
+        // Top-k descending. Full sort is fine: diffs is at most O(#pairings) which is small,
+        // and we read out the first k_max entries.
+        std::sort(diffs.begin(), diffs.end(), std::greater<input_t>());
+        const size_t fill = std::min(diffs.size(), static_cast<size_t>(k_max));
+        for (size_t k = 0; k < fill; ++k) {
+            out[gi][k] = diffs[k];
+        }
+    }
+
+    return out;
 }
 
 PythonLandscape landscapes_spatiotemporal_naive(Trajectories& trajectories, input_t& max_metric_value, int hom_dim, int landscape_dim){

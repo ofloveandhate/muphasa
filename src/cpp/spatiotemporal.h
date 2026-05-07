@@ -2,6 +2,7 @@
 #define MPH_SPATIOTEMPORAL_INCLUDED
 
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "matrix.h"
@@ -44,8 +45,13 @@ compute_boundary_matrices_spatiotemporal_dm(DistanceMatrices& trajectory_dms,
                                             input_t max_metric_value,
                                             int hom_dim);
 
+std::vector<std::pair<size_t, size_t>>
+find_tree_leaves(const std::vector<std::vector<int>>& parents_per_t,
+                 const std::vector<size_t>& n_per_t);
+
 std::vector<std::vector<int>>
-build_ancestor_lookup(const std::vector<std::vector<int>>& parents_per_t, size_t n_leaves);
+build_ancestor_lookup(const std::vector<std::vector<int>>& parents_per_t,
+                      const std::vector<std::pair<size_t, size_t>>& leaves);
 
 DistanceMatrices tree_positions_to_dms(const PositionsPerTime& positions_per_t,
                                        const std::vector<std::vector<int>>& ancestor_lookup,

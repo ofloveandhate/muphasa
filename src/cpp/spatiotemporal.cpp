@@ -94,29 +94,82 @@ DistanceMatrices get_trajectory_dms(Trajectories& trajectories, Metric* metric){
 }
 
 
-std::vector<std::vector<int>>
-build_ancestor_lookup(const std::vector<std::vector<int>>& parents_per_t, size_t n_leaves) {
-    /* For each leaf and each timestep, the index of that leaf's ancestor in positions_per_t[t]
-     (or -1 if the lineage hadn't started yet at that timestep).
+std::vector<std::pair<size_t, size_t>>
+find_tree_leaves(const std::vector<std::vector<int>>& parents_per_t,
+                 const std::vector<size_t>& n_per_t) {
+    /* Locate every node in the lineage tree with no children. A node (t, idx) has no children
+     iff no entry in parents_per_t[t+1] equals idx; final-timestep nodes are leaves trivially.
 
-     parents_per_t {std::vector<std::vector<int>>} -- per-timestep parent indices, indexed
+     parents_per_t {std::vector<std::vector<int>>}: per-timestep parent indices, indexed
+        [timestep][agent_at_timestep]. Each entry is an index into positions_per_t[t-1], or -1
+        if the agent's lineage starts at this timestep. parents_per_t[0] is unused.
+     n_per_t {std::vector<size_t>}: number of agents alive at each timestep.
+
+     Returns:
+     std::vector<std::pair<size_t, size_t>>: (t_die, idx) pairs, with the final-timestep leaves
+        first (in their original index order) and earlier leaves appended after. Each pair gives
+        the timestep at which the leaf's lineage terminates and its index in positions_per_t[t_die].
+     */
+    std::vector<std::pair<size_t, size_t>> leaves;
+    size_t T = n_per_t.size();
+    if (T == 0) {
+        return leaves;
+    }
+
+    std::vector<std::vector<bool>> is_referenced(T);
+    for (size_t t = 0; t < T; t++) {
+        is_referenced[t].assign(n_per_t[t], false);
+    }
+    for (size_t t = 1; t < T; t++) {
+        for (int p : parents_per_t[t]) {
+            if (p != NO_PARENT) {
+                is_referenced[t - 1][p] = true;
+            }
+        }
+    }
+
+    // Final-timestep nodes first (matches the previous "vertex set = final-time agents" ordering
+    // exactly when no earlier leaves exist, so old snapshots that don't have early-dying lineages
+    // are unaffected).
+    for (size_t idx = 0; idx < n_per_t[T - 1]; idx++) {
+        leaves.emplace_back(T - 1, idx);
+    }
+    for (size_t t = 0; t + 1 < T; t++) {
+        for (size_t idx = 0; idx < n_per_t[t]; idx++) {
+            if (!is_referenced[t][idx]) {
+                leaves.emplace_back(t, idx);
+            }
+        }
+    }
+    return leaves;
+}
+
+
+std::vector<std::vector<int>>
+build_ancestor_lookup(const std::vector<std::vector<int>>& parents_per_t,
+                      const std::vector<std::pair<size_t, size_t>>& leaves) {
+    /* For each leaf and each timestep, the index of that leaf's ancestor in positions_per_t[t]
+     (or -1 if the leaf's lineage was not alive at that timestep, i.e. either before its birth
+     or after its death).
+
+     parents_per_t {std::vector<std::vector<int>>}: per-timestep parent indices, indexed
         [timestep][agent_at_timestep]. Each entry is an index into positions_per_t[t-1], or -1 if
         the agent's lineage starts at this timestep. parents_per_t[0] is unused (no t-1 to point
         into) but is expected to be present so the outer dimension matches positions_per_t.
-     n_leaves {size_t} -- number of agents at the final timestep, which form the vertex set.
+     leaves {std::vector<std::pair<size_t, size_t>>}: (t_die, idx) pairs identifying every leaf
+        of the lineage tree (output of find_tree_leaves).
 
      Returns:
-     std::vector<std::vector<int>> -- ancestor lookup table indexed [leaf][timestep]; entry is the
-        ancestor's index in positions_per_t[t], or -1 if the lineage didn't exist yet at t.
+     std::vector<std::vector<int>>: ancestor lookup table indexed [leaf][timestep]; entry is the
+        ancestor's index in positions_per_t[t], or -1 if the lineage was not alive at t (either
+        not yet born or already dead).
      */
     size_t T = parents_per_t.size();
-    std::vector<std::vector<int>> lookup(n_leaves, std::vector<int>(T, NO_PARENT));
-    if (T == 0) {
-        return lookup;
-    }
-    for (size_t l = 0; l < n_leaves; l++) {
-        lookup[l][T - 1] = (int)l;
-        for (size_t t_plus_one = T - 1; t_plus_one > 0; t_plus_one--) {
+    std::vector<std::vector<int>> lookup(leaves.size(), std::vector<int>(T, NO_PARENT));
+    for (size_t l = 0; l < leaves.size(); l++) {
+        size_t t_die = leaves[l].first;
+        lookup[l][t_die] = (int)leaves[l].second;
+        for (size_t t_plus_one = t_die; t_plus_one > 0; t_plus_one--) {
             int current = lookup[l][t_plus_one];
             if (current == NO_PARENT) {
                 break;
@@ -140,7 +193,7 @@ DistanceMatrices tree_positions_to_dms(const PositionsPerTime& positions_per_t,
         [leaf][timestep].
      metric {Metric*} -- metric used to compute pairwise distances between ancestor positions.
      max_metric_value {input_t} -- value used to mark "no edge at this timestep" (when at least
-        one of the two leaves' lineages didn't exist yet).
+        one of the two leaves' lineages was not alive, either before birth or after death).
 
      Returns:
      DistanceMatrices -- per-timestep distance matrices in the same lower-triangular layout as
@@ -353,26 +406,32 @@ compute_boundary_matrices_spatiotemporal_tree(PositionsPerTime& positions_per_t,
                                               Metric* metric,
                                               input_t max_metric_value,
                                               int hom_dim){
-    /* Convenience wrapper around compute_boundary_matrices_spatiotemporal_dm: takes tree-
-     structured input, builds per-timestep distance matrices on the leaves (= agents at the final
-     timestep), and forwards. Pairs of leaves whose lineages weren't both alive at a given time
-     get distance >= max_metric_value at that time, which the engine treats as "edge missing".
+    /* Convenience wrapper around compute_boundary_matrices_spatiotemporal_dm: takes tree
+     structured input, builds per-timestep distance matrices on the leaves of the lineage tree
+     (i.e. every node with no children, including those that die before the final timestep), and
+     forwards. Pairs of leaves whose lineages weren't both alive at a given time (either not yet
+     born or already dead) get distance >= max_metric_value at that time, which the engine
+     treats as "edge missing".
 
-     positions_per_t {PositionsPerTime} -- per-timestep positions of agents alive at each timestep,
+     positions_per_t {PositionsPerTime}: per-timestep positions of agents alive at each timestep,
         indexed [timestep][agent_at_timestep][spatial_dim].
-     parents_per_t {std::vector<std::vector<int>>} -- per-timestep parent indices, indexed
+     parents_per_t {std::vector<std::vector<int>>}: per-timestep parent indices, indexed
         [timestep][agent_at_timestep]. Each entry is an index into positions_per_t[t-1], or -1
         if the agent's lineage starts at this timestep. parents_per_t[0] is unused.
-     metric {Metric*} -- metric used to compute pairwise distances between ancestor positions.
-     max_metric_value {input_t} -- maximum allowed distance for inclusion in the complex.
-     hom_dim {int} -- the dimension of the homology to be computed.
+     metric {Metric*}: metric used to compute pairwise distances between ancestor positions.
+     max_metric_value {input_t}: maximum allowed distance for inclusion in the complex.
+     hom_dim {int}: the dimension of the homology to be computed.
      */
     if (positions_per_t.size() == 0) {
         DistanceMatrices empty_dms;
         return compute_boundary_matrices_spatiotemporal_dm(empty_dms, max_metric_value, hom_dim);
     }
-    size_t n_leaves = positions_per_t.back().size();
-    std::vector<std::vector<int>> ancestor_lookup = build_ancestor_lookup(parents_per_t, n_leaves);
+    std::vector<size_t> n_per_t(positions_per_t.size());
+    for (size_t t = 0; t < positions_per_t.size(); t++) {
+        n_per_t[t] = positions_per_t[t].size();
+    }
+    std::vector<std::pair<size_t, size_t>> leaves = find_tree_leaves(parents_per_t, n_per_t);
+    std::vector<std::vector<int>> ancestor_lookup = build_ancestor_lookup(parents_per_t, leaves);
     DistanceMatrices trajectory_dms =
         tree_positions_to_dms(positions_per_t, ancestor_lookup, metric, max_metric_value);
     return compute_boundary_matrices_spatiotemporal_dm(trajectory_dms, max_metric_value, hom_dim);

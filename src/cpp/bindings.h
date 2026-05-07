@@ -30,4 +30,9 @@ std::pair<GradedMatrix, GradedMatrix> groebner_bases(std::vector<std::vector<int
 PythonCompressedLandscape landscapes_spatiotemporal(Trajectories& trajectories, input_t max_metric_value, int hom_dim);
 PythonCompressedLandscape landscapes_spatiotemporal_tree(PositionsPerTime& positions_per_t, std::vector<std::vector<int>>& parents_per_t, input_t max_metric_value, int hom_dim);
 
+std::vector<std::vector<input_t>> eval_sparse_landscape_batch(
+    std::vector<std::pair<std::vector<input_t>, std::vector<std::vector<input_t>>>>& pairings,
+    std::vector<std::vector<input_t>>& grades,
+    int k_max);
+
 #endif // MPH_BINDINGS_INCLUDED
