@@ -16,6 +16,14 @@ cdef extern from "bindings.h":
 		vector[pair[vector[int], vector[vector[int]] ]] pairings
 		vector[vector[input_t]] index_value_lists
 
+	ctypedef struct PythonNaiveBenchFixture:
+		vector[pair[vector[int], vector[vector[int]] ]] pairings
+		vector[vector[input_t]] index_value_lists
+		vector[vector[int]] presentation_matrix
+		vector[vector[int]] presentation_column_grades
+		vector[vector[int]] presentation_row_grades
+		vector[int] v_max
+
 	# ctypedef struct PythonLandscape:
 	# 	vector[pair[vector[int], size_t]] landscape
 
@@ -33,5 +41,13 @@ cdef extern from "bindings.h":
 	PythonCompressedLandscape landscapes_spatiotemporal_tree(vector[vector[vector[input_t]]]& positions_per_t, vector[vector[int]]& parents_per_t, input_t max_metric_value, int hom_dim) except +
 
 	vector[vector[input_t]] eval_sparse_landscape_batch(vector[pair[vector[input_t], vector[vector[input_t]]]]& pairings, vector[vector[input_t]]& grades, int k_max) except +
+
+	vector[int] eval_sparse_landscape_batch_int(vector[pair[vector[int], vector[vector[int]]]]& pairings, vector[vector[int]]& grades, int k) except +
+
+	PythonNaiveBenchFixture naive_bench_setup_spatiotemporal(vector[vector[vector[input_t]]]& trajectories, input_t max_metric_value, int hom_dim) except +
+
+	vector[int] eval_naive_rank_int(vector[vector[int]]& presentation_matrix, vector[vector[int]]& presentation_column_grades, vector[vector[int]]& presentation_row_grades, vector[vector[int]]& query_grades, int landscape_dim) except +
+
+	vector[int] eval_naive_cached_int(vector[vector[int]]& presentation_matrix, vector[vector[int]]& presentation_column_grades, vector[vector[int]]& presentation_row_grades, vector[vector[int]]& query_grades, int landscape_dim) except +
 
 	# PythonLandscape landscapes_spatiotemporal_naive(vector[vector[vector[input_t]]] trajectories, input_t max_metric_value, int hom_dim, int landscape_dim) except +

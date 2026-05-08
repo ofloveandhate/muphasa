@@ -691,6 +691,212 @@ Landscape computeLandscapeNaive_diag(Matrix presentation, std::vector<grade_t> r
 }
 
 
+namespace {
+
+bool relation_active_at(const grade_t& g, const grade_t& w_high, size_t r_index) {
+    /* Match eval2's half-open-bar convention along axis r: a relation at grade g is active at
+     w_high iff g <= w_high on axes 0..r-1 AND g[r] < w_high[r] (strict). Plain poset <= (closed)
+     would include a relation at exactly grade w_high, killing bars at the syzygy grade itself
+     and giving naive heights one less than eval2's min(low, high). */
+    for (size_t a = 0; a < r_index; a++) {
+        if (g[a] > w_high[a]) {
+            return false;
+        }
+    }
+    return g[r_index] < w_high[r_index];
+}
+
+size_t naive_rank_height_at(Matrix& presentation,
+                            std::vector<grade_t>& row_grades,
+                            grade_t& v,
+                            int landscape_dim,
+                            index_t max_pivot) {
+    if (v.empty()) {
+        return 0;
+    }
+    /* For query grade v and layer dim landscape_dim, find the largest k in [0, v[r]] such that
+     rank( map H(v - k*e_r) -> H(v + k*e_r) ) >= landscape_dim, by computing the rank from
+     scratch at each k. Two ways this differs from the original compute_landscape_naive_rank:
+
+     1. Rank computation. The original used a pivot-count proxy (count alive-at-z rows that
+        aren't pivots of any reduced column). That undercounts in multi-parameter: a relation
+        whose pivot lands in an alive-at-z row but whose support extends to dead rows doesn't
+        actually kill that row in the alive-at-z subspace. Correct formulation here: after
+        reducing relations at w_high into an image basis, keep reducing indicator columns e_i
+        for alive-at-w_low rows against the same pivot map, pushing survivors. Push count is
+        dim of image M(w_low) -> M(w_high).
+
+     2. Boundary convention along axis r. Use strict g[r] < w_high[r] for relation inclusion
+        (half-open bars along r); poset <= on all other axes. This matches eval2's closed
+        min(low, high) contribution; full poset <= would give one less at grades sitting
+        exactly syz[r]-v[r] away from a syzygy. */
+    const size_t r_index = v.size() - 1;
+    const index_t v_r = v[r_index];
+    const size_t pivot_map_size = (size_t)std::max((index_t)row_grades.size(), max_pivot + 1);
+    size_t max_rank_index = 0;
+    for (size_t k = 0; k <= (size_t)v_r; k++) {
+        std::vector<index_t> pivot_map(pivot_map_size, -1);
+        Matrix reduced_basis;
+        grade_t w_high(v);
+        w_high[r_index] = v_r + k;
+        for (size_t i = 0; i < presentation.size(); i++) {
+            if (relation_active_at(presentation[i].grade, w_high, r_index)) {
+                SignatureColumn working_column = presentation[i];
+                index_t pivot = working_column.get_pivot().get_index();
+                while (pivot != -1 && pivot_map[pivot] > -1) {
+                    working_column.plus(reduced_basis[pivot_map[pivot]]);
+                    pivot = working_column.get_pivot().get_index();
+                }
+                if (pivot != -1) {
+                    pivot_map[pivot] = (index_t)reduced_basis.size();
+                    reduced_basis.push_back(working_column);
+                }
+            }
+        }
+        grade_t w_low(v);
+        w_low[r_index] = v_r - k;
+        int current_rank = 0;
+        for (size_t i = 0; i < row_grades.size(); i++) {
+            if (!row_grades[i].leq_poset(w_low)) {
+                continue;
+            }
+            SignatureColumn working_column(row_grades[i], reduced_basis.size());
+            working_column.push(column_entry_t(1, (index_t)i));
+            index_t pivot = working_column.get_pivot().get_index();
+            while (pivot != -1 && pivot_map[pivot] > -1) {
+                working_column.plus(reduced_basis[pivot_map[pivot]]);
+                pivot = working_column.get_pivot().get_index();
+            }
+            if (pivot != -1) {
+                pivot_map[pivot] = (index_t)reduced_basis.size();
+                reduced_basis.push_back(working_column);
+                current_rank++;
+            }
+        }
+        if (current_rank < landscape_dim) {
+            return max_rank_index;
+        }
+        max_rank_index = k;
+    }
+    return max_rank_index;
+}
+
+}  // namespace
+
+std::vector<size_t> computeLandscapeNaiveRankAtGrades(Matrix& presentation,
+                                                     std::vector<grade_t>& row_grades,
+                                                     std::vector<grade_t>& query_grades,
+                                                     int landscape_dim) {
+    /* Per-query-grade variant of compute_landscape_naive_rank. For each grade in query_grades,
+     compute the integer landscape height at layer landscape_dim by reducing the presentation
+     from scratch. No caching across grades --- this is the textbook "rank invariant a bunch of
+     times" baseline used as a reference for the eval2 path. */
+    index_t max_pivot = 0;
+    for (auto& column : presentation) {
+        if (max_pivot < column.get_pivot().get_index()) {
+            max_pivot = column.get_pivot().get_index();
+        }
+    }
+    std::vector<size_t> heights;
+    heights.reserve(query_grades.size());
+    for (auto& v : query_grades) {
+        heights.push_back(naive_rank_height_at(presentation, row_grades, v, landscape_dim, max_pivot));
+    }
+    return heights;
+}
+
+std::vector<size_t> computeLandscapeNaiveCachedAtGrades(Matrix& presentation,
+                                                       std::vector<grade_t>& row_grades,
+                                                       std::vector<grade_t>& query_grades,
+                                                       int landscape_dim) {
+    /* Per-query-grade variant of compute_landscape_naive_rank with a reduced-basis cache keyed
+     by w_high. For each query grade v and each k = 0..v_r, the rank computation needs the
+     reduction of all relations active at w_high = v + k*e_r so that row-generator indicator
+     columns alive at w_low = v - k*e_r can be pushed against it; many queries (and different k
+     within one query) share the same w_high, so we memoize (reduced_basis, pivot_map) by w_high
+     and copy out per use because pushing indicators mutates both. The cache is local to this
+     call so repeat-bench invocations don't share state. */
+    std::vector<size_t> heights;
+    heights.reserve(query_grades.size());
+    index_t max_pivot = 0;
+    for (auto& column : presentation) {
+        if (max_pivot < column.get_pivot().get_index()) {
+            max_pivot = column.get_pivot().get_index();
+        }
+    }
+    const size_t pivot_map_size = (size_t)std::max((index_t)row_grades.size(), max_pivot + 1);
+
+    std::unordered_map<grade_t, std::pair<Matrix, std::vector<index_t>>, GradeHasher> cache;
+    auto build_image = [&](const grade_t& w_high) {
+        std::vector<index_t> pivot_map(pivot_map_size, -1);
+        Matrix reduced_basis;
+        const size_t r_index = w_high.size() - 1;
+        for (size_t i = 0; i < presentation.size(); i++) {
+            if (relation_active_at(presentation[i].grade, w_high, r_index)) {
+                SignatureColumn working_column = presentation[i];
+                index_t pivot = working_column.get_pivot().get_index();
+                while (pivot != -1 && pivot_map[pivot] > -1) {
+                    working_column.plus(reduced_basis[pivot_map[pivot]]);
+                    pivot = working_column.get_pivot().get_index();
+                }
+                if (pivot != -1) {
+                    pivot_map[pivot] = (index_t)reduced_basis.size();
+                    reduced_basis.push_back(working_column);
+                }
+            }
+        }
+        return std::pair<Matrix, std::vector<index_t>>(std::move(reduced_basis),
+                                                       std::move(pivot_map));
+    };
+
+    for (auto& v : query_grades) {
+        if (v.empty()) {
+            heights.push_back(0);
+            continue;
+        }
+        const size_t r_index = v.size() - 1;
+        const index_t v_r = v[r_index];
+        size_t max_rank_index = 0;
+        for (size_t k = 0; k <= (size_t)v_r; k++) {
+            grade_t w_high(v);
+            w_high[r_index] = v_r + k;
+            auto it = cache.find(w_high);
+            if (it == cache.end()) {
+                it = cache.emplace(w_high, build_image(w_high)).first;
+            }
+            Matrix reduced_basis = it->second.first;
+            std::vector<index_t> pivot_map = it->second.second;
+
+            grade_t w_low(v);
+            w_low[r_index] = v_r - k;
+            int current_rank = 0;
+            for (size_t i = 0; i < row_grades.size(); i++) {
+                if (!row_grades[i].leq_poset(w_low)) {
+                    continue;
+                }
+                SignatureColumn working_column(row_grades[i], reduced_basis.size());
+                working_column.push(column_entry_t(1, (index_t)i));
+                index_t pivot = working_column.get_pivot().get_index();
+                while (pivot != -1 && pivot_map[pivot] > -1) {
+                    working_column.plus(reduced_basis[pivot_map[pivot]]);
+                    pivot = working_column.get_pivot().get_index();
+                }
+                if (pivot != -1) {
+                    pivot_map[pivot] = (index_t)reduced_basis.size();
+                    reduced_basis.push_back(working_column);
+                    current_rank++;
+                }
+            }
+            if (current_rank < landscape_dim) {
+                break;
+            }
+            max_rank_index = k;
+        }
+        heights.push_back(max_rank_index);
+    }
+    return heights;
+}
+
 Landscape compute_landscape_peaks(MultigradedBasis ker_basis, MultigradedBasis p_basis) {
     Landscape lanscape;
 

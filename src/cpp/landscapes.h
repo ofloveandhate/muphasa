@@ -194,5 +194,15 @@ inline size_t DiagLandscape::operator()(grade_t& grade, size_t k)
 CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& presentation, std::vector<grade_t> row_grades);
 Landscape computeLandscapeNaive(Matrix presentation, std::vector<grade_t> row_grades, grade_t v_max, int lanscape_dim);
 
+std::vector<size_t> computeLandscapeNaiveRankAtGrades(Matrix& presentation,
+                                                     std::vector<grade_t>& row_grades,
+                                                     std::vector<grade_t>& query_grades,
+                                                     int landscape_dim);
+
+std::vector<size_t> computeLandscapeNaiveCachedAtGrades(Matrix& presentation,
+                                                       std::vector<grade_t>& row_grades,
+                                                       std::vector<grade_t>& query_grades,
+                                                       int landscape_dim);
+
 
 #endif /* landscapes_h */

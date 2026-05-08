@@ -60,3 +60,35 @@ def evalSparseLandscapeBatch(pairings, np.ndarray[double, ndim=2, mode="c"] grad
 
 	return res
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def evalSparseLandscapeBatchInt(pairings, grades, int k):
+
+	res = pyMPH.eval_sparse_landscape_batch_int(pairings, grades, k)
+
+	return res
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def naiveBenchSetupSpatiotemporal(np.ndarray[double, ndim=3, mode="c"] trajectories not None, pyMPH.input_t max_metric_value, int hom_dim):
+
+	res = pyMPH.naive_bench_setup_spatiotemporal(trajectories, max_metric_value, hom_dim)
+
+	return res
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def evalNaiveRankInt(presentation_matrix, presentation_column_grades, presentation_row_grades, query_grades, int landscape_dim):
+
+	res = pyMPH.eval_naive_rank_int(presentation_matrix, presentation_column_grades, presentation_row_grades, query_grades, landscape_dim)
+
+	return res
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def evalNaiveCachedInt(presentation_matrix, presentation_column_grades, presentation_row_grades, query_grades, int landscape_dim):
+
+	res = pyMPH.eval_naive_cached_int(presentation_matrix, presentation_column_grades, presentation_row_grades, query_grades, landscape_dim)
+
+	return res
+
