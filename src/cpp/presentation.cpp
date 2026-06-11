@@ -705,9 +705,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
 }
 
 std::pair<Matrix, hash_map<size_t, grade_t>> compute_presentation_schreyer(Matrix& image_generators, Matrix& kernel_generators, bool debug){
-    /** Input a minimal set of generators for the image and a Groebner basis for the kernel.
-
-     */
+    /** Input a minimal set of generators for the image and a Groebner basis for the kernel. */
 
     sort(kernel_generators.begin(), kernel_generators.end(),[ ](  SignatureColumn& lhs,  SignatureColumn& rhs )
          {

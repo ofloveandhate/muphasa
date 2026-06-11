@@ -199,7 +199,10 @@ DistanceMatrices tree_positions_to_dms(const PositionsPerTime& positions_per_t,
      DistanceMatrices -- per-timestep distance matrices in the same lower-triangular layout as
         compute_distance_matrix: dm[t][i] has length i+1, valid for accesses dm[t][i][j] with
         j <= i. Entries where either lineage was missing at that timestep are set to
-        max_metric_value (which the engine treats as "edge missing").
+        max_metric_value (which the engine treats as "edge missing"). The diagonal dm[t][i][i]
+        encodes self-presence: 0 when leaf i's lineage is alive at t, max_metric_value when not.
+        interlevel_rips_radius reads the diagonal to gate vertex births by lifespan, through the
+        same mechanism that gates edges.
      */
     size_t T = positions_per_t.size();
     size_t n_leaves = ancestor_lookup.size();
@@ -213,6 +216,7 @@ DistanceMatrices tree_positions_to_dms(const PositionsPerTime& positions_per_t,
         for (size_t i = 0; i < n_leaves; i++) {
             dms[t][i].resize(i + 1);
             int a_i = ancestor_lookup[i][t];
+            dms[t][i][i] = (a_i == NO_PARENT) ? max_metric_value : 0;
             for (size_t j = 0; j < i; j++) {
                 int a_j = ancestor_lookup[j][t];
                 if (a_i == NO_PARENT || a_j == NO_PARENT) {
@@ -243,6 +247,21 @@ input_t interlevel_rips_radius(const DistanceMatrices& trajectory_dms,
      Returns:
      input_t -- the simplex's Rips radius over [start_time, end_time].
      */
+
+    // A lone vertex has no edges to gate on. Its presence over the window is carried by the
+    // diagonal entry dm[t][v][v] instead: 0 when the vertex is present at t, >= max_metric_value
+    // when it is not (tree inputs; for plain trajectories the diagonal is metric->eval(p, p) = 0,
+    // i.e. always present). Taking the min over the window mirrors the per-edge rule below: the
+    // vertex is born in [start_time, end_time] iff it is present at some timestep in the window.
+    if (vertices.size() == 1) {
+        size_t v = vertices[0];
+        input_t presence = trajectory_dms[start_time][v][v];
+        for (size_t t = start_time + 1; t <= end_time; t++) {
+            presence = std::min(presence, trajectory_dms[t][v][v]);
+        }
+        return presence;
+    }
+
     input_t radius = 0.0;
     for (size_t i = 1; i < vertices.size(); i++) {
         for (size_t j = 0; j < i; j++) {
@@ -334,7 +353,9 @@ compute_boundary_matrices_spatiotemporal_dm(DistanceMatrices& trajectory_dms,
      trajectory_dms {DistanceMatrices} -- per-timestep distance matrices, indexed [timestep][i][j].
         Entries at or above max_metric_value are treated as "edge missing" at that timestep, which
         lets the caller encode unrealised vertex pairs (e.g. two leaves of a lineage tree whose
-        ancestors weren't both alive yet).
+        ancestors weren't both alive yet). The diagonal [t][i][i] likewise encodes vertex presence
+        at t (0 when present, >= max_metric_value when absent), gating vertex births in degree 0;
+        compute_distance_matrix fills it with metric->eval(p, p) = 0, i.e. always present.
      max_metric_value {input_t} -- maximum allowed distance for inclusion in the complex.
      hom_dim {int} -- the dimension of the homology to be computed.
 
@@ -411,7 +432,9 @@ compute_boundary_matrices_spatiotemporal_tree(PositionsPerTime& positions_per_t,
      (i.e. every node with no children, including those that die before the final timestep), and
      forwards. Pairs of leaves whose lineages weren't both alive at a given time (either not yet
      born or already dead) get distance >= max_metric_value at that time, which the engine
-     treats as "edge missing".
+     treats as "edge missing". The diagonal carries the same sentinel for a single absent leaf,
+     so a leaf's vertex is born in a time window iff the window overlaps its lifespan; a leaf
+     contributes no isolated degree-0 component in windows it never lived through.
 
      positions_per_t {PositionsPerTime}: per-timestep positions of agents alive at each timestep,
         indexed [timestep][agent_at_timestep][spatial_dim].

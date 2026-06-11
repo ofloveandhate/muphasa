@@ -169,8 +169,12 @@ template <typename T> grade_t transform_grade(const std::vector<T>& input_grade,
 }
 
 template <typename T> void add_boundary_columns(std::vector<Simplex<T>>& high_simplices, std::vector<Simplex<T>>& low_simplices, Matrix& matrix, std::vector<hash_map<T, index_t>>& grade_map){
-    /* Helper function to construct and add the columns of the boundary matrix from lists of simplices. */
-    
+    /* Helper function to construct and add the columns of the boundary matrix from lists of simplices.
+
+       In degree 0, low_simplices is empty, so every vertex column maps to a single phantom generator at
+       row 0 (map[empty] returns 0). This yields REDUCED H~_0 (no infinite component). Incidental but
+       deliberately kept; pinned by test/test_h0_reduced_homology.py. */
+
     std::unordered_map<VertexContainer, size_t, VectorHasher> map;
     for(size_t simplex_index=0; simplex_index<low_simplices.size(); simplex_index++){
         map[VertexContainer(low_simplices[simplex_index].vertices)] = simplex_index;
