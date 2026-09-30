@@ -89,7 +89,7 @@ CompressedLandscape computeCompressedLandscape(std::vector<SignatureColumn>& pre
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 

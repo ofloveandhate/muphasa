@@ -343,7 +343,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 
@@ -949,7 +949,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 
