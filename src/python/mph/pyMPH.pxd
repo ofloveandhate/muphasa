@@ -4,6 +4,14 @@ from libcpp.vector cimport vector
 from libcpp.queue cimport priority_queue
 from libcpp.pair cimport pair
 
+cdef extern from "Python.h":
+	# Declared here rather than cimported from cpython.exc so that it carries no Cython
+	# exception spec and can be handed to C++ as a plain function pointer.
+	int PyErr_CheckSignals()
+
+cdef extern from "utils.h":
+	void set_interrupt_hook(int (*hook)())
+
 cdef extern from "bindings.h":
 	ctypedef struct GradedMatrix:
 		vector[vector[pair[int, int]]] matrix

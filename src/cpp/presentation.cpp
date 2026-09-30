@@ -347,6 +347,8 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
             grades.pop();
         }
 
+        check_interrupt();
+
         iter_index++;
         size_t grade_hash = grade_hasher(v);
 

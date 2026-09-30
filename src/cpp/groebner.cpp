@@ -1330,6 +1330,7 @@ Matrix compute_minimal_generating_set(Matrix& generators){
         if(index > 0 && index_list[index]==index_list[index-1]){
             continue;
         }
+        check_interrupt();
         grade_t v = index_list[index];
         iter_index++;
         size_t grade_hash = grade_hasher(v);

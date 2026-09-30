@@ -1,5 +1,16 @@
 #include "utils.h"
 
+static interrupt_hook_t interrupt_hook = nullptr;
+
+void set_interrupt_hook(interrupt_hook_t hook) {
+    interrupt_hook = hook;
+}
+
+void check_interrupt() {
+    if (interrupt_hook != nullptr && interrupt_hook() != 0) {
+        throw InterruptedException();
+    }
+}
 
 
 long getMemoryUsage()
