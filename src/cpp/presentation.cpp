@@ -455,7 +455,9 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         }
         std::vector<SignatureColumn> image_work(image_columns.begin()+image_index, image_columns.begin()+image_end);
         index_t n_image_work = (index_t)image_work.size();
-        #pragma omp parallel for schedule(dynamic, 1) if(n_image_work >= 4)
+        // Grades with few columns run serially: the fork/join costs more than it saves there, and
+        // on small-grade workloads (e.g. degree 1) it made the parallel build slower than serial.
+        #pragma omp parallel for schedule(dynamic, 1) if(n_image_work >= 16)
         for(index_t k=0; k<n_image_work; k++){
             SignatureColumn& wc = image_work[k];
             wc.syzygy = SyzColumn();
