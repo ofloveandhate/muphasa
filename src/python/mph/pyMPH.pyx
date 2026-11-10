@@ -4,6 +4,12 @@ cimport numpy as np
 cimport mph.pyMPH as pyMPH
 import cython
 
+# Make the C++ computations interruptible with Ctrl-C. Their long loops poll this hook;
+# PyErr_CheckSignals runs any pending Python signal handlers and returns non-zero with the
+# exception (normally KeyboardInterrupt) set. C++ then unwinds by throwing, and the `except +`
+# translation lets the already-set Python exception through.
+pyMPH.set_interrupt_hook(pyMPH.PyErr_CheckSignals)
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def doPresentation(np.ndarray[double,ndim=2,mode="c"] points not None, np.ndarray[int,ndim=1,mode="c"] metrics, np.ndarray[double,ndim=1,mode="c"] max_metric_values, np.ndarray[int,ndim=1,mode="c"] filters, int hom_dim):

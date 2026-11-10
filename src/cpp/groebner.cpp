@@ -234,7 +234,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt_min(std::vector<Signatur
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 
@@ -443,7 +443,7 @@ std::pair<Matrix, Matrix> computeGroebnerBases_gradeopt(std::vector<SignatureCol
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
         size_t grade_hash = grade_hasher(v);
@@ -615,7 +615,7 @@ Matrix computekernel_gradeopt(std::vector<SignatureColumn>& columns){
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
         iter_index++;
@@ -992,7 +992,7 @@ std::pair<Matrix, std::vector<std::pair<grade_t, std::vector<size_t>>>> ImageGB_
     while(!grades.empty()){
         grade_t v = grades.top();
         grades.pop();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 
@@ -1330,6 +1330,7 @@ Matrix compute_minimal_generating_set(Matrix& generators){
         if(index > 0 && index_list[index]==index_list[index-1]){
             continue;
         }
+        check_interrupt();
         grade_t v = index_list[index];
         iter_index++;
         size_t grade_hash = grade_hasher(v);

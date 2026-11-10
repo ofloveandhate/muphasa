@@ -17,6 +17,10 @@ elif system == "Darwin":
     extra_link_args.extend(["-stdlib=libc++", "-mmacosx-version-min=10.9"])
 else:
     extra_compile_args.append("-std=c++11")
+    # OpenMP for the parallel image-column reduction in presentation.cpp. Without it the
+    # pragmas are ignored and the code is serial, so builds that lack OpenMP still work.
+    extra_compile_args.append("-fopenmp")
+    extra_link_args.append("-fopenmp")
 
 ext_modules = [
     Extension(

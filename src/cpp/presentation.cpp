@@ -343,9 +343,11 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
+
+        check_interrupt();
 
         iter_index++;
         size_t grade_hash = grade_hasher(v);
@@ -439,9 +441,34 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation_3p(Matrix& im
         }
 
         /* Reduce image columns */
-        while(image_index < image_columns.size() && image_columns[image_index].grade == v){
-            SignatureColumn working_column(image_columns[image_index]);
-            working_column.syzygy = SyzColumn();
+        // The image columns of grade v are reduced in two passes. Pass 1 reduces every column
+        // independently against the generators active at the start of the phase (read-only on
+        // shared state, so it can run in parallel). Pass 2 runs serially in the original order:
+        // it continues any reduction that stopped at a pivot claimed by an earlier column of this
+        // grade, then records the result exactly as the serial code did. Since each step adds the
+        // unique active owner of the current pivot, and columns appended in pass 2 can only own
+        // pivots that were unowned or inactive at the start of the phase, pass 1 computes exactly
+        // the prefix of the serial reduction chain, and the result is identical.
+        size_t image_end = image_index;
+        while(image_end < image_columns.size() && image_columns[image_end].grade == v){
+            image_end++;
+        }
+        std::vector<SignatureColumn> image_work(image_columns.begin()+image_index, image_columns.begin()+image_end);
+        index_t n_image_work = (index_t)image_work.size();
+        // Grades with few columns run serially: the fork/join costs more than it saves there, and
+        // on small-grade workloads (e.g. degree 1) it made the parallel build slower than serial.
+        #pragma omp parallel for schedule(dynamic, 1) if(n_image_work >= 16)
+        for(index_t k=0; k<n_image_work; k++){
+            SignatureColumn& wc = image_work[k];
+            wc.syzygy = SyzColumn();
+            index_t p = wc.get_pivot_index();
+            while(p != -1 && pivot_mapH[p] != -1 && gb_columnsH[pivot_mapH[p]].last_updated == iter_index){
+                wc.plus(gb_columnsH[pivot_mapH[p]]);
+                p = wc.get_pivot_index();
+            }
+        }
+        for(index_t k=0; k<n_image_work; k++){
+            SignatureColumn& working_column = image_work[k];
             pivot = working_column.get_pivot_index();
             while(pivot != -1 && pivot_mapH[pivot] != -1 && gb_columnsH[pivot_mapH[pivot]].last_updated == iter_index){
                 working_column.plus(gb_columnsH[pivot_mapH[pivot]]);
@@ -947,7 +974,7 @@ std::pair<Matrix, std::vector<grade_t>> computeMinimalPresentation(Matrix& image
     int iter_index = 0;
     while(!grades.empty()){
         grade_t v = grades.top();
-        while(v == grades.top()){
+        while(!grades.empty() && v == grades.top()){
             grades.pop();
         }
 

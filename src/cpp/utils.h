@@ -7,6 +7,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <exception>
 #include <unordered_map>
 #include <unordered_set>
 #include "boost/functional/hash.hpp"
@@ -39,5 +40,20 @@ long getMemoryUsage();
 void mem_usage(double& vm_usage, double& resident_set);
 
 void get_mem_usage(double& vm_usage, double& resident_set);
+
+/* Cooperative cancellation for long-running computations. The host installs a hook that returns
+ non-zero when the computation should stop (the Python bindings install PyErr_CheckSignals, so
+ a pending Ctrl-C shows up here). Long loops call check_interrupt(), which throws
+ InterruptedException when the hook fires. With no hook installed (the console build) it is a
+ no-op. */
+typedef int (*interrupt_hook_t)();
+
+struct InterruptedException : public std::exception {
+    const char* what() const noexcept override { return "computation interrupted"; }
+};
+
+void set_interrupt_hook(interrupt_hook_t hook);
+
+void check_interrupt();
 
 #endif // MPH_UTILS_INCLUDED
